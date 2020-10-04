@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 from sklearn.manifold import MDS
 import matplotlib.pyplot as plt
+import math
 
 from myModule import Watch, Watchs, TelementWInfo, Telement, Tset, Welement, Wset
 
@@ -49,7 +50,8 @@ for i in range(t_set.interval_num):
         t_element = Telement(tmp, tmp - t_set.interval_time*1.1, i) #なんとなく1.1
         t_set.add_elements(t_element)
 
-
+#出現回数が閾値以降のものを残す時に、！！！！！！！！！ここで何個wordを抽出するかを決める値。ここをいじって！   !!!!!!!!!!!!!!!!!!!!!!!!!
+WORDS_NUM_IN_A_CLOUD = 15
 # t_elemnt.channel_dictを作る。一つの期間で、出現回数まとめる。
 for t_element in t_set.elements_list:
     for watch in watchs.watch_list_all:
@@ -60,7 +62,7 @@ for t_element in t_set.elements_list:
                 t_element.channel_count_dict[watch.channel_id] += 1
         
     tmp_taple_list = sorted(t_element.channel_count_dict.items(), key=lambda x:x[1], reverse=True) #多い順に並び替え。返り値がタプルのリストになっているため、辞書に置き換える必要がある。
-    tmp_taple_list = tmp_taple_list[0:15] #出現回数が閾値以降のものを残す. #!!!!!!!!!!!!!!!!!!!!!  ここで何個wordを抽出するかを決める    !!!!!!!!!!!!!!!!!!!!!!!!!
+    tmp_taple_list = tmp_taple_list[0:WORDS_NUM_IN_A_CLOUD] #出現回数が閾値以降のものを残す.
     #タプルを辞書に直して格納
     t_element.channel_count_dict.clear()
     for item in tmp_taple_list:
@@ -118,10 +120,10 @@ for (i, t_element) in zip(range(len(t_set.elements_list)), t_set.elements_list):
         t_element.extracted_w_info_dict[channel_id] = TelementWInfo()
         # frequency ポインタじゃないから、実体を直接変える必要がある。
         t_set.elements_list[i].extracted_w_info_dict[channel_id].frequency = t_element.channel_count_dict[channel_id]
-        print(channel_id, ": frequency = ",  t_set.elements_list[i].extracted_w_info_dict[channel_id].frequency)
+        
         # position
         t_element.extracted_w_info_dict[channel_id].position = w_set.elements_dict[channel_id].position
-        #print(channel_id, ": position = ",  t_element.extracted_w_info_dict[channel_id].position)
+        
         
         # watch_video_dict
         for watch in watchs.watch_list_selected:
@@ -130,12 +132,10 @@ for (i, t_element) in zip(range(len(t_set.elements_list)), t_set.elements_list):
                     t_element.extracted_w_info_dict[channel_id].watch_video_dict[watch.video_id] = [watch]
                 else:
                     t_element.extracted_w_info_dict[channel_id].watch_video_dict[watch.video_id].append(watch)
-                
-        #print(channel_id, ": extracted_w_info_dict =  ",  t_element.extracted_w_info_dict[channel_id].watch_video_dict)
+        
         # color 
-        # 使い回すから、代入
-        vec = w_set.elements_dict[channel_id].importance_vec
-        index = t_element.index
+        vec = w_set.elements_dict[channel_id].importance_vec # 使い回すから、代入
+        index = t_element.index                              # 使い回すから、代入
 
         if t_element.index == 0: #一番端のT_elementの時
             if vec[index + 1] > 0:
@@ -160,11 +160,52 @@ for (i, t_element) in zip(range(len(t_set.elements_list)), t_set.elements_list):
         #print("---------------------------")
 
 
-S_INDEX = 5
+
 # significance curve 書く
 # H(X)を求めるために、t[5]に対して、ヒストグラムを作成する。
-for w_info in t_set.elements_list[S_INDEX].extracted_w_info_dict.values:
+S_INDEX = 5
+INTERVAL_NUM = 5  #論文だと64になっていたやつ
+all_histgram_position_dict = {}
+for w_info in t_set.elements_list[S_INDEX].extracted_w_info_dict.values():
+    # frequency
+    w_info.set_histgram_position(0, INTERVAL_NUM, t_set.elements_list[S_INDEX].max_frequency(), t_set.elements_list[S_INDEX].min_frequency())
+    # x position
+    w_info.set_histgram_position(1, INTERVAL_NUM, t_set.elements_list[S_INDEX].max_x()        , t_set.elements_list[S_INDEX].min_x()        )
+    # y position
+    w_info.set_histgram_position(2, INTERVAL_NUM, t_set.elements_list[S_INDEX].max_y()        , t_set.elements_list[S_INDEX].min_y()        )
+    # color 
+    w_info.set_histgram_position(3, INTERVAL_NUM)
+
+    if str(w_info.histgram_position) not in all_histgram_position_dict:
+        all_histgram_position_dict[str(w_info.histgram_position)] =  1
+    else:
+        all_histgram_position_dict[str(w_info.histgram_position)] += 1
+
+# H(X)を計算
+all_sum = sum(all_histgram_position_dict.values())
+H_X = 0
+for cnt in all_histgram_position_dict.values():
+    p = cnt / all_sum
+    H_X += p * math.log( 1 / p)
+print(H_X)
+
+# H(X;Y)を計算
+for w_info in t_set.elements_list[S_INDEX + 1].extracted_w_info_dict.values():
+    # frequency
+    w_info.set_histgram_position(0, INTERVAL_NUM, t_set.elements_list[S_INDEX].max_frequency(), t_set.elements_list[S_INDEX].min_frequency())
+    # x position
+    w_info.set_histgram_position(1, INTERVAL_NUM, t_set.elements_list[S_INDEX].max_x()        , t_set.elements_list[S_INDEX].min_x()        )
+    # y position
+    w_info.set_histgram_position(2, INTERVAL_NUM, t_set.elements_list[S_INDEX].max_y()        , t_set.elements_list[S_INDEX].min_y()        )
+    # color 
+    w_info.set_histgram_position(3, INTERVAL_NUM)
+
+
+
+
     
+
+
 
 
 '''

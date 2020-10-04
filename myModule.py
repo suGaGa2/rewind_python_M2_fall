@@ -39,35 +39,40 @@ class TelementWInfo:
         self.watch_video_dict = {} # {video_id : [watch_1, watch_2, watch_3], video_id : [watch_1, watch_2], ....}
         self.color = "NO"
         self.histgram_position = [0, 0, 0, 0]
+        self.all_histgram_position_dict = {}
     
-    def set_histogram_position(self, which, interval_num, max, min):
+    def set_histgram_position(self, which, interval_num=0, max=0, min=0):
         if which == 0: #frequency
-            interval = max - min / interval_num
+            interval = (max - min) / interval_num
             i = 0
             while self.frequency >= min + interval * (i + 1):
                 i += 1
             self.histgram_position[which] = i
         
-        if which == １: #x position
-            interval = max - min / interval_num
+        if which == 1: #x position
+            interval = (max - min) / interval_num
             i = 0
             while self.position[0] >= min + interval * (i + 1):
                 i += 1
             self.histgram_position[which] = i
         
         if which == 2: #x position
-            interval = max - min / interval_num
+            interval = (max - min) / interval_num
             i = 0
             while self.position[1] >= min + interval * (i + 1):
                 i += 1
             self.histgram_position[which] = i
 
         if which == 3: #color
-            interval = max - min / interval_num
-            i = 0
-            while self. >= min + interval * (i + 1):
-                i += 1
-            self.histgram_position[which] = i
+            if self.color == "RED":
+                self.histgram_position[which] = 0
+            if self.color == "BLUE":
+                self.histgram_position[which] = 1
+            if self.color == "PURPLE":
+                self.histgram_position[which] = 2
+            if self.color == "NO":
+                self.histgram_position[which] = 3
+
 
 
 class Telement:
@@ -81,26 +86,56 @@ class Telement:
     def max_frequency(self):
         max = 0
         i = 0
-        for t_element_w_info in self.extracted_w_info_dict.values():
+        for w_info in self.extracted_w_info_dict.values():
             if i == 0:
-                max = t_element_w_info.frequency
-            elif max < t_element_w_info.frequency:
-                max = t_element_w_info.frequency
+                max = w_info.frequency
+            elif max < w_info.frequency:
+                max = w_info.frequency
             i += 1
         return max
 
     def min_frequency(self):
         min = 0
         i = 0
-        for t_element_w_info in self.extracted_w_info_dict.values():
+        for w_info in self.extracted_w_info_dict.values():
             if i == 0:
-                min = t_element_w_info.frequency
-            elif min > t_element_w_info.frequency:
-                min = t_element_w_info.frequency
+                min = w_info.frequency
+            elif min > w_info.frequency:
+                min = w_info.frequency
             i += 1
         return min
 
+    def max_x(self):
+        max = 0
+        for w_info in self.extracted_w_info_dict.values():
+            if w_info.position[0] > max:
+                max = w_info.position[0]
+        return max
 
+    def min_x(self):
+        min = 0
+        for (i, w_info) in zip( range(len(self.extracted_w_info_dict.values())), self.extracted_w_info_dict.values() ):
+            if i == 0:
+                min = w_info.position[0]
+            elif w_info.position[0] < min:
+                min = w_info.position[0]
+        return min
+
+    def max_y(self):
+        max = 0
+        for w_info in self.extracted_w_info_dict.values():
+            if w_info.position[1] > max:
+                max = w_info.position[1]
+        return max
+
+    def min_y(self):
+        min = 0
+        for (i, w_info) in zip( range(len(self.extracted_w_info_dict.values())), self.extracted_w_info_dict.values()):
+            if i == 0:
+                min = w_info.position[1]
+            elif w_info.position[1] < min:
+                min = w_info.position[1]
+        return min
 
 class Tset:
     def __init__(self, start_datetime, end_datetime):
