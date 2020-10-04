@@ -1,6 +1,12 @@
 import datetime
 import numpy as np
 
+import sys
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+import sip
+
 class Watch:
     def __init__(self, video_title, video_id, channel_name, channel_id, watch_datetime):
         self.video_title = video_title
@@ -39,7 +45,6 @@ class TelementWInfo:
         self.watch_video_dict = {} # {video_id : [watch_1, watch_2, watch_3], video_id : [watch_1, watch_2], ....}
         self.color = "NO"
         self.histgram_position = [0, 0, 0, 0]
-        self.all_histgram_position_dict = {}
     
     def set_histgram_position(self, which, interval_num=0, max=0, min=0):
         if which == 0: #frequency
@@ -82,6 +87,7 @@ class Telement:
         self.channel_count_dict = {}    #{channelid : frequency,  channelid : frequency,} ソートされて、上位の選ばれたもの
         self.extracted_w_info_dict = {} # {channelid : w_info, id, w_info}
         self.index = i
+        self.all_histgram_position_dict = {} # {[1,2,4,0]:1, [3,6,7,8]:5,  ...}
 
     def max_frequency(self):
         max = 0
@@ -182,6 +188,67 @@ class Wset:    #選び抜かれた、Wordクラウドに出てくるchannel id�
         for w_element in self.elements_dict.items():
             print(w_element)
             print("****")
+        
+
+class MainWindow(QWidget):
+    def __init__(self, image1, image2, start_datetime, end_datetime, parent=None):
+        super(MainWindow, self).__init__(parent)
+        self.setWindowTitle('Trend View')
+
+        vbox  = QVBoxLayout()
+        vbox2 = QVBoxLayout()
+        parent_hbox = QHBoxLayout()
+
+
+        # QPixmapオブジェクト作成
+        pixmap1 = QPixmap(image1)
+        pixmap2 = QPixmap(image2)
+
+        # ラベルを作ってその中に画像を置く
+        self.lbl1 = QLabel()
+        self.lbl1.setPixmap(pixmap1)
+        self.lbl_time = QLabel("     " + end_datetime.strftime('%Y/%m/%d') + " ~ " + start_datetime.strftime('%Y/%m/%d'), self)
+
+        self.lbl2 = QLabel()
+        self.lbl2.setPixmap(pixmap2)
+
+        vbox.addWidget(self.lbl1)
+        vbox.addWidget(self.lbl_time)
+
+        
+        self.button = QPushButton('change')
+        self.button.clicked.connect(self.change)
+
+        self.inputText = QLineEdit()
+        self.inputText.setText("")
+
+        self.outputText = QLineEdit()
+        self.outputText.setText("")
+        self.outputText.setReadOnly(True)
+
+        vbox2.addWidget(self.lbl2)
+        vbox2.addWidget(self.inputText)
+        vbox2.addWidget(self.button)
+        vbox2.addWidget(self.outputText)
+        
+
+        parent_hbox.addLayout(vbox)
+        parent_hbox.addLayout(vbox2)
+
+        
+
+        self.setLayout(parent_hbox)
+        self.move(300, 200)
+        self.show()  
+    
+    def change(self):
+        DRAW_INDEX = int(self.inputText.text())
+        pixmap1 = QPixmap("S_X.png")
+        self.lbl1.setPixmap(pixmap1)
+'''
+'''
+        
+
         
 
 '''
