@@ -31,6 +31,8 @@ w_set = Wset()
 w_set.set_elements_dict(t_set)
 w_set.set_element_dict_importance_vec(t_set)
 
+w_set.print_w_set()
+
 # Initial positionをMDSで計算
 w_set.set_words_initital_position(t_set)
 
