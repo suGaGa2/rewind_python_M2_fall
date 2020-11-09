@@ -96,7 +96,7 @@ class Telement:
     def __init__(self,start_datetime, end_datetime, i):
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
-        self.channel_count_dict = {}    #{channelid : frequency,  channelid : frequency,} ソートされて、上位の選ばれたもの
+        self.word_count_dict = {}    #{channelid : frequency,  channelid : frequency,} ソートされて、上位の選ばれたもの
         self.extracted_w_info_dict = {} # {channelid : w_info, id, w_info}
         self.index = i
         self.all_histgram_position_dict = {} # {[1,2,4,0]:1, [3,6,7,8]:5,  ...}
@@ -247,23 +247,27 @@ def make_figure(TSET_INTERVAL_NUM = 15,WORDS_NUM_IN_A_CLOUD = 20, DRAW_INDEX = 5
             t_element = Telement(tmp, tmp - t_set.interval_time*1.1, i) #なんとなく1.1
             t_set.add_elements(t_element)
 
+#######ここをいじっていく。
+    # タイトルを取得
+    
 
-    # t_elemnt.channel_dictを作る。一つの期間で、出現回数まとめる。
+
+    # t_elemnt.word_dictを作る。一つの期間で、出現回数まとめる。
     for t_element in t_set.elements_list:
         for watch in watchs.watch_list_all:
             if watch.watch_datetime  <= t_element.start_datetime and watch.watch_datetime >= t_element.end_datetime:
-                if watch.channel_id not in t_element.channel_count_dict: #channel_idで作る。
-                    t_element.channel_count_dict[watch.channel_id] = 1
+                if watch.channel_id not in t_element.word_count_dict: #channel_idで作る。
+                    t_element.word_count_dict[watch.channel_id] = 1
                 else:
-                    t_element.channel_count_dict[watch.channel_id] += 1
+                    t_element.word_count_dict[watch.channel_id] += 1
             
-        tmp_taple_list = sorted(t_element.channel_count_dict.items(), key=lambda x:x[1], reverse=True) #多い順に並び替え。返り値がタプルのリストになっているため、辞書に置き換える必要がある。
+        tmp_taple_list = sorted(t_element.word_count_dict.items(), key=lambda x:x[1], reverse=True) #多い順に並び替え。返り値がタプルのリストになっているため、辞書に置き換える必要がある。
         tmp_taple_list = tmp_taple_list[0:WORDS_NUM_IN_A_CLOUD] #出現回数が閾値以降のものを残す.
         #タプルを辞書に直して格納
-        t_element.channel_count_dict.clear()
+        t_element.word_count_dict.clear()
         for item in tmp_taple_list:
-            t_element.channel_count_dict[item[0]] = item[1]
-        #print(t_element.channel_count_dict)
+            t_element.word_count_dict[item[0]] = item[1]
+        #print(t_element.word_count_dict)
 
     # w_set作る。初期情報登録
     w_set = Wset()
@@ -271,7 +275,7 @@ def make_figure(TSET_INTERVAL_NUM = 15,WORDS_NUM_IN_A_CLOUD = 20, DRAW_INDEX = 5
 
     # w_elementのimportance Vecを設定
     for i, t_element in zip(range(t_set.interval_num), t_set.elements_list):
-        for item in t_element.channel_count_dict.items():
+        for item in t_element.word_count_dict.items():
             w_set.elements_dict[item[0]].importance_vec[i] = item[1]
 
 
@@ -312,10 +316,10 @@ def make_figure(TSET_INTERVAL_NUM = 15,WORDS_NUM_IN_A_CLOUD = 20, DRAW_INDEX = 5
     for (i, t_element) in zip(range(len(t_set.elements_list)), t_set.elements_list):
         # watch_video_dictを作るために、
         watchs.set_watch_list_selected(t_element.start_datetime, t_element.end_datetime)
-        for channel_id in t_element.channel_count_dict.keys():
+        for channel_id in t_element.word_count_dict.keys():
             t_element.extracted_w_info_dict[channel_id] = TelementWInfo()
             # frequency ポインタじゃないから、実体を直接変える必要がある。
-            t_set.elements_list[i].extracted_w_info_dict[channel_id].frequency = t_element.channel_count_dict[channel_id]
+            t_set.elements_list[i].extracted_w_info_dict[channel_id].frequency = t_element.word_count_dict[channel_id]
             
             # position
             t_element.extracted_w_info_dict[channel_id].position = w_set.elements_dict[channel_id].position
@@ -499,7 +503,7 @@ def make_figure(TSET_INTERVAL_NUM = 15,WORDS_NUM_IN_A_CLOUD = 20, DRAW_INDEX = 5
     #plt.plot(left, height)
     #fig.savefig("S_X.png")
     return t_set.elements_list[DRAW_INDEX].start_datetime, t_set.elements_list[DRAW_INDEX].end_datetime
-    
+
 
 class MainWindow(QWidget):
     def __init__(self, image1, image2, start_datetime, end_datetime, parent=None):
