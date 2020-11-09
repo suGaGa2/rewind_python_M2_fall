@@ -1,6 +1,14 @@
 #MeCabをインストール
 import MeCab
 import re
+
+
+def p(strig):
+    print(strig)
+
+p("hoge")
+
+"""
 #形態素解析したい文章
 data = "すもももももももものうち"
 
@@ -21,3 +29,4 @@ with open(path) as f:
                     nounAndVerb.append(info[6])
                     print(nounAndVerb)
 
+"""
