@@ -17,6 +17,8 @@ from PIL import Image, ImageDraw
 import requests
 import os
 
+import MeCab
+
 
 
 class Watch:
@@ -26,6 +28,7 @@ class Watch:
         self.channel_name = channel_name
         self.channel_id = channel_id
         self.watch_datetime = datetime.datetime.strptime(str(watch_datetime), '%b %d, %Y, %I:%M:%S %p JST')
+        self.tags = []
 
 
 class Watchs:
@@ -58,6 +61,25 @@ class Watchs:
         for watch in self.watch_list_all:
             if watch.watch_datetime <= start_datetime and watch.watch_datetime >= end_datetime:
                 self.watch_list_selected.append(watch)
+
+    def tag_each_watch(self):
+        for watch in self.watch_list_all:
+            mecab = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd').parse(watch.video_title)
+            lines = mecab.split('\n')
+
+            nounAndVerb = []
+            for line in lines:
+                feature = line.split('\t')
+                if len(feature) == 2:#'EOS'と''を省く
+                    info = feature[1].split(',')
+                    hinshi = info[0]
+                    if hinshi in ('名詞', '動詞'):
+                        nounAndVerb.append(info[6])
+
+            watch.tags = nounAndVerb
+            while '*' in watch.tags:
+                watch.tags.remove('*')
+
 
 '''
 -------------------------------------------------------------------------------
@@ -201,11 +223,26 @@ class Tset:
             if i == self.interval_num -1: #最後だったら。境界条件的にこれいる。
                 t_element = Telement(tmp, tmp - self.interval_time*1.1, i) #なんとなく1.1
                 self.elements_list.append(t_element)
-"""
+
     def construct_t_element_word_count_dict_2nd(self, watchs, WORDS_NUM_IN_A_CLOUD):
+        # t_elemnt.word_dictを作る。一つの期間で、出現回数まとめる。
         for t_element in self.elements_list:
-            for watch in watch.watch_list
-"""
+            for watch in watchs.watch_list_all:
+                if watch.watch_datetime  <= t_element.start_datetime and watch.watch_datetime >= t_element.end_datetime:
+                    for tag in watch.tags:
+                        if tag not in t_element.word_count_dict: 
+                            t_element.word_count_dict[tag] = 1
+                        else:
+                            t_element.word_count_dict[tag] += 1
+                
+            tmp_taple_list = sorted(t_element.word_count_dict.items(), key=lambda x:x[1], reverse=True) #多い順に並び替え。返り値がタプルのリストになっているため、辞書に置き換える必要がある。
+            tmp_taple_list = tmp_taple_list[0:WORDS_NUM_IN_A_CLOUD] #出現回数が閾値以降のものを残す.
+            #タプルを辞書に直して格納
+            t_element.word_count_dict.clear()
+            for item in tmp_taple_list:
+                t_element.word_count_dict[item[0]] = item[1]
+            #print(t_element.word_count_dict)
+
     def construct_t_element_word_count_dict(self, watchs, WORDS_NUM_IN_A_CLOUD):
         # t_elemnt.word_dictを作る。一つの期間で、出現回数まとめる。
         for t_element in self.elements_list:

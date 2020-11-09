@@ -4,12 +4,14 @@ from myModule import *
 #!!!!!!!!!!!  ここでインターバル数を決める。最低でも3以上にすること　！！     ！！！！！！!!!!!!!!!!!!!!!!!!!!!!!!!
 TSET_INTERVAL_NUM = 15
 # 出現回数が閾値以降のものを残す時に、何個wordを残す(抽出する)かを決める値。 !!!!!!!!!!!!!!!!!!!!!!!!!
-WORDS_NUM_IN_A_CLOUD = 20
+WORDS_NUM_IN_A_CLOUD = 60
 # ワードクラウドとして描画する t_elementのINDEX
 DRAW_INDEX = 5 
 
-# watchsを設定
+# watchs
 watchs = Watchs('output.csv')
+
+# watch_listを作成
 watchs.construct_watch_list_all()
 
 # t_setを作成・初期化
@@ -18,10 +20,11 @@ t_set.set_interval_num(TSET_INTERVAL_NUM)
 # t_setを、t_elementに、start_datetime, end_datetime, index(0オリジン)を登録して生成。
 t_set.construct_element_list()
 
-
+# ワードリストを作る。
+watchs.tag_each_watch()
 
 # t_setの各t_elementに対するword_count_dictを作成
-t_set.construct_t_element_word_count_dict(watchs, WORDS_NUM_IN_A_CLOUD)
+t_set.construct_t_element_word_count_dict_2nd(watchs, WORDS_NUM_IN_A_CLOUD)
 
 # w_set作る。初期情報登録
 w_set = Wset()
@@ -36,7 +39,7 @@ t_set.set_t_element_extracted_w_info_dic(watchs, w_set)
 
 # サムネクラウドの表示
 t_set.draw_crowd(DRAW_INDEX)
-# Significance curveの表示
+# significance curveの表示
 t_set.draw_significance_curve(TSET_INTERVAL_NUM)
 
 
