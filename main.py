@@ -1,8 +1,7 @@
-
 from myModule import *
 
 #!!!!!!!!!!!  ここでインターバル数を決める。最低でも3以上にすること　！！     ！！！！！！!!!!!!!!!!!!!!!!!!!!!!!!!
-TSET_INTERVAL_NUM = 15
+TSET_INTERVAL_NUM = 30
 # 出現回数が閾値以降のものを残す時に、何個wordを残す(抽出する)かを決める値。 !!!!!!!!!!!!!!!!!!!!!!!!!
 WORDS_NUM_IN_A_CLOUD = 60
 # ワードクラウドとして描画する t_elementのINDEX
@@ -31,31 +30,33 @@ w_set = Wset()
 w_set.set_elements_dict(t_set)
 w_set.set_element_dict_importance_vec(t_set)
 
-w_set.print_w_set()
-
 # Initial positionをMDSで計算
 w_set.set_words_initital_position(t_set)
 
-#t_setの各t_elementの抽出されたwordに諸々の情報を登録
+# t_setの各t_elementの抽出されたwordに諸々の情報を登録
 t_set.set_t_element_extracted_w_info_dic(watchs, w_set)
 
-# サムネクラウドの表示
-t_set.draw_crowd(DRAW_INDEX)
+# サムネイルを描画するために、指定時間範囲の視聴頻度、タグのポジションからのサムネイルの配置を考える。
+t_set.set_t_element_extracted_watch_list(watchs)
+
+#print(t_set.elements_list[5].word_count_dict)
+
+# ワードクラウドの表示
+t_set.draw_word_crowd(DRAW_INDEX)
+# ワードクラウドの表示
+t_set.draw_thumbnail_crowd(DRAW_INDEX)
+
 # significance curveの表示
-t_set.draw_significance_curve(TSET_INTERVAL_NUM)
-
-
+t_set.draw_significance_curve(TSET_INTERVAL_NUM, DRAW_INDEX)
 
 '''
 app = QApplication(sys.argv)
 main_window = MainWindow("pillow_imagedraw.jpg", "S_X.png", \
-                         _START_DATETIME,\
-                         _END_DATETIME,\
-                        )
+                         t_set.elements_list[DRAW_INDEX].start_datetime,\
+                         t_set.elements_list[DRAW_INDEX].end_datetime)
 main_window.show()
 sys.exit(app.exec_())
 '''
-
 
 
 

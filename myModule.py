@@ -125,14 +125,19 @@ class TelementWInfo:
             if self.color == "NO":
                 self.histgram_position[which] = 3
 
+class TelementWatchInfo:
+    def __init__(self):
+        self.view_num = 0
+        self.position = np.zeros(2)
 
 
 class Telement:
     def __init__(self,start_datetime, end_datetime, i):
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
-        self.word_count_dict = {}    #{channelid : frequency,  channelid : frequency,} ソートされて、上位の選ばれたもの
-        self.extracted_w_info_dict = {} # {channelid : w_info, id, w_info}
+        self.word_count_dict = {}       # {word : frequency,  word : frequency, ...} ソートされて、上位の選ばれたもの
+        self.extracted_w_info_dict = {} # {word : w_info, word : w_info, ...}
+        self.extracted_watch_info_dict = {} # {video_id: watch_info, video_id: watch_info , ....}
         self.index = i
         self.all_histgram_position_dict = {} # {[1,2,4,0]:1, [3,6,7,8]:5,  ...}
 
@@ -266,50 +271,95 @@ class Tset:
         for (i, t_element) in zip(range(len(self.elements_list)), self.elements_list):
             # watch_video_dictを作るために、
             watchs.set_watch_list_selected(t_element.start_datetime, t_element.end_datetime)
-            for channel_id in t_element.word_count_dict.keys():
-                t_element.extracted_w_info_dict[channel_id] = TelementWInfo()
+            for word in t_element.word_count_dict.keys():
+                t_element.extracted_w_info_dict[word] = TelementWInfo()
                 # frequency ポインタじゃないから、実体を直接変える必要がある。
-                self.elements_list[i].extracted_w_info_dict[channel_id].frequency = t_element.word_count_dict[channel_id]
+                self.elements_list[i].extracted_w_info_dict[word].frequency = t_element.word_count_dict[word]
                 
                 # position
-                t_element.extracted_w_info_dict[channel_id].position = w_set.elements_dict[channel_id].position
+                t_element.extracted_w_info_dict[word].position = w_set.elements_dict[word].position
                 
                 
                 # watch_video_dict
                 for watch in watchs.watch_list_selected:
-                    if channel_id == watch.channel_id:
-                        if watch.video_id not in t_element.extracted_w_info_dict[channel_id].watch_video_dict:
-                            t_element.extracted_w_info_dict[channel_id].watch_video_dict[watch.video_id] = [watch]
+                    if word in watch.tags:
+                        if watch.video_id not in t_element.extracted_w_info_dict[word].watch_video_dict:
+                            t_element.extracted_w_info_dict[word].watch_video_dict[watch.video_id] = [watch]
                         else:
-                            t_element.extracted_w_info_dict[channel_id].watch_video_dict[watch.video_id].append(watch)
+                            t_element.extracted_w_info_dict[word].watch_video_dict[watch.video_id].append(watch)
                 
                 # color 
-                vec = w_set.elements_dict[channel_id].importance_vec # 使い回すから、代入
+                vec = w_set.elements_dict[word].importance_vec # 使い回すから、代入
                 index = t_element.index                              # 使い回すから、代入
 
                 if t_element.index == 0: #一番端のT_elementの時
                     if vec[index + 1] > 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "RED"
+                        t_element.extracted_w_info_dict[word].color = "RED"
                     elif np.count_nonzero(vec[index + 1:] > 0) == 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "PURPLE"
+                        t_element.extracted_w_info_dict[word].color = "PURPLE"
 
                 elif t_element.index == len(vec) -1:#一番端のT_elementの時
                     if vec[index - 1] > 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "BLUE"
+                        t_element.extracted_w_info_dict[word].color = "BLUE"
                     elif np.count_nonzero(vec[:index] > 0) == 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "PURPLE"
+                        t_element.extracted_w_info_dict[word].color = "PURPLE"
                 
                 else:
                     if vec[index + 1] > 0 and vec[index - 1] == 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "RED"
+                        t_element.extracted_w_info_dict[word].color = "RED"
                     elif vec[index - 1] > 0 and vec[index + 1] == 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "BLUE"
+                        t_element.extracted_w_info_dict[word].color = "BLUE"
                     elif np.count_nonzero(vec[index + 1:] > 0) == 0 and np.count_nonzero(vec[:index] > 0) == 0:
-                        t_element.extracted_w_info_dict[channel_id].color = "PURPLE"
+                        t_element.extracted_w_info_dict[word].color = "PURPLE"
                 #print(channel_id, ": color =  ",  t_element.extracted_w_info_dict[channel_id].color)
                 #print("---------------------------")
 
-    def draw_crowd(self, DRAW_INDEX):
+    def set_t_element_extracted_watch_list(self, watchs):
+        # t_elementの extracted_watch_info_dictに情報を挿入
+        for (i, t_element) in zip(range(len(self.elements_list)), self.elements_list):
+            # 指定時間範囲のwatchを抽出
+            watchs.set_watch_list_selected(t_element.start_datetime, t_element.end_datetime)
+            for watch in watchs.watch_list_selected:
+                video_id = watch.video_id
+
+                # extracted wordを含むwatchかをチェック。含むならflag=1に変更。
+                flag = 0
+                for tag in watch.tags:
+                    for dictionary in t_element.extracted_w_info_dict:
+                        if tag in dictionary:
+                            flag = 1
+                
+                if flag == 1: #flag = 1しか相手にしない。
+                    # 初回登録
+                    if video_id not in t_element.extracted_watch_info_dict:
+                        t_element.extracted_watch_info_dict[video_id] =  TelementWatchInfo()
+                        t_element.extracted_watch_info_dict[video_id].view_num = 1
+                        # ↓↓　ここから前処理の計算部分
+                        sum_frequency = 0
+                        for tag in watch.tags:
+                            if tag in t_element.extracted_w_info_dict:
+                                sum_frequency += t_element.extracted_w_info_dict[tag].frequency
+                        x_position = 0
+                        y_position = 0
+                        for tag in watch.tags:
+                            if tag in t_element.word_count_dict:
+                                x_position += t_element.extracted_w_info_dict[tag].frequency * t_element.extracted_w_info_dict[tag].position[0] / sum_frequency
+                                y_position += t_element.extracted_w_info_dict[tag].frequency * t_element.extracted_w_info_dict[tag].position[1] / sum_frequency
+                        # ↑↑　計算終了
+
+                        t_element.extracted_watch_info_dict[video_id].position[0] = x_position
+                        t_element.extracted_watch_info_dict[video_id].position[1] = y_position
+                    # ２回目以降登録
+                    else:
+                        t_element.extracted_watch_info_dict[video_id].view_num += 1 
+
+                    print("x : " + str(t_element.extracted_watch_info_dict[video_id].position[0]))
+                    print("y : " + str(t_element.extracted_watch_info_dict[video_id].position[1]))
+                    print( "frequency: " + str(t_element.extracted_watch_info_dict[video_id].view_num))
+
+
+
+    def draw_word_crowd(self, DRAW_INDEX):
         X_SIZE = 500
         Y_SIZE = 500
 
@@ -317,42 +367,65 @@ class Tset:
         position_scale_rate = 500 / (self.x_max + 0.5) 
         draw = ImageDraw.Draw(campus)
         # 一回 DRAW_INDEX　のt_elementに対して、描画してみる。
-        for channel_id in self.elements_list[DRAW_INDEX].extracted_w_info_dict:
-            x = self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].position[0]
-            y = self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].position[1]
-            size = self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].frequency
+        for word in self.elements_list[DRAW_INDEX].extracted_w_info_dict:
+            x = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].position[0]
+            y = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].position[1]
+            size = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].frequency
 
-            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].color == "RED":
+            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "RED":
                 draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y -2 * size, \
                                 X_SIZE / 2+ position_scale_rate * x +2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y +2 * size), \
                                 fill=(240, 0, 0), outline=(255, 255, 255))
 
-            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].color == "BLUE":
+            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "BLUE":
                 draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y -2 * size, \
                                 X_SIZE / 2 + position_scale_rate * x +2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y +2 * size), \
                                 fill=(0, 0, 240), outline=(255, 255, 255))
 
-            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].color == "PURPLE":
+            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "PURPLE":
                 draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y -2 * size, \
                                 X_SIZE / 2 + position_scale_rate * x +2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y +2 * size), \
                                 fill=(150, 0, 150), outline=(255, 255, 255))
                 
-            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[channel_id].color == "NO":
+            if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "NO":
                 draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
                                 X_SIZE / 2 + position_scale_rate * y -2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * x +2 * size, \
                                 Y_SIZE / 2 + position_scale_rate * y +2 * size), \
                                 fill=(50, 50, 50), outline=(255, 255, 255))
+            
 
         campus.save('pillow_imagedraw.jpg', quality=95)
 
-    def draw_significance_curve(self, TSET_INTERVAL_NUM):
+    def draw_thumbnail_crowd(self, DRAW_INDEX):
+        position_scale_rate = 500 / (self.x_max + 0.5) 
+        X_SIZE = 500
+        Y_SIZE = 500
+        campus = Image.open('pillow_imagedraw.jpg')
+        #画像の貼り付け
+        for item in self.elements_list[DRAW_INDEX].extracted_watch_info_dict.items():
+            url = 'http://i.ytimg.com/vi/' + item[0] + "/mqdefault.jpg"
+            response = requests.get(url)
+            image = response.content
+            file_name = "Thumbnail/" + item[0] + ".jpeg"
+
+            with open(file_name, "wb") as aaa:
+                aaa.write(image)
+            
+            img = Image.open("Thumbnail/" + item[0] + ".jpeg")
+            img_resize = img.resize((20*item[1].view_num, 15*item[1].view_num))
+            campus.paste(img_resize, (int(X_SIZE / 2 + position_scale_rate * item[1].position[0] -2), \
+                                      int(Y_SIZE / 2 + position_scale_rate * item[1].position[1] -2) )\
+                        )
+            campus.save('pillow_imagedraw.jpg', quality=95)
+
+    def draw_significance_curve(self, TSET_INTERVAL_NUM, DRAW_INDEX):
         # significance curve 書く
         left   = np.array( range(TSET_INTERVAL_NUM-1) )
         height = np.empty(0)
@@ -450,10 +523,10 @@ class Tset:
             height = np.append(height, S_X)
         print(len(height))
         #文字を取り込む
-        #fig = plt.figure()
-        #p = plt.vlines([DRAW_INDEX], -1, 2.1, "red", linestyles='dashed') 
-        #plt.plot(left, height)
-        #fig.savefig("S_X.png") 
+        fig = plt.figure()
+        p = plt.vlines([DRAW_INDEX], -1, 2.1, "red", linestyles='dashed') 
+        plt.plot(left, height)
+        fig.savefig("S_X.png") 
 
 '''
 -------------------------------------------------------------------------------

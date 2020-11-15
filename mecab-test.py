@@ -2,13 +2,20 @@
 import MeCab
 import re
 
+import requests
+url = 'http://i.ytimg.com/vi/' + "TzaYNiT_CRg" + "/mqdefault.jpg"
+response = requests.get(url)
 
-def p(strig):
-    print(strig)
+image = response.content
 
-p("hoge")
+file_name = "TzaYNiT_CRg.jpeg"
 
-"""
+with open(file_name, "wb") as aaa:
+    aaa.write(image)
+'''
+
+
+
 #形態素解析したい文章
 data = "すもももももももものうち"
 
@@ -28,5 +35,4 @@ with open(path) as f:
                 if hinshi in ('名詞', '動詞'):
                     nounAndVerb.append(info[6])
                     print(nounAndVerb)
-
-"""
+'''
