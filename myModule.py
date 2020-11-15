@@ -13,11 +13,13 @@ import matplotlib.pyplot as plt
 import math
 import copy
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import requests
 import os
 
 import MeCab
+
+from scipy.spatial import Delaunay, delaunay_plot_2d, Voronoi, voronoi_plot_2d
 
 
 
@@ -353,60 +355,92 @@ class Tset:
                     else:
                         t_element.extracted_watch_info_dict[video_id].view_num += 1 
 
-                    print("x : " + str(t_element.extracted_watch_info_dict[video_id].position[0]))
-                    print("y : " + str(t_element.extracted_watch_info_dict[video_id].position[1]))
-                    print( "frequency: " + str(t_element.extracted_watch_info_dict[video_id].view_num))
+                    #print("x : " + str(t_element.extracted_watch_info_dict[video_id].position[0]))
+                    #print("y : " + str(t_element.extracted_watch_info_dict[video_id].position[1]))
+                    #print( "frequency: " + str(t_element.extracted_watch_info_dict[video_id].view_num))
 
 
 
-    def draw_word_crowd(self, DRAW_INDEX):
-        X_SIZE = 500
-        Y_SIZE = 500
+    def draw_word_crowd(self, DRAW_INDEX, X_SIZE, Y_SIZE):
 
         campus = Image.new('RGB', (X_SIZE, Y_SIZE), (128, 128, 128))
-        position_scale_rate = 500 / (self.x_max + 0.5) 
+        position_scale_rate = X_SIZE / 2 * (self.x_max + 0.5) 
         draw = ImageDraw.Draw(campus)
+
         # 一回 DRAW_INDEX　のt_elementに対して、描画してみる。
-        for word in self.elements_list[DRAW_INDEX].extracted_w_info_dict:
+        for i, word in zip(range(len(self.elements_list[DRAW_INDEX].extracted_w_info_dict)), \
+                                 self.elements_list[DRAW_INDEX].extracted_w_info_dict\
+                          ):
             x = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].position[0]
             y = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].position[1]
             size = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].frequency
 
+
+            ttfontname = "./logotypejp_mp_m_1.1.ttf"
+            fontsize = size * 3
+            text = word
+            textRGB = (0, 0, 0)
+
+            font = ImageFont.truetype(ttfontname, fontsize)
+            textWidth, textHeight = draw.textsize(text,font=font)
+
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "RED":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y -2 * size, \
-                                X_SIZE / 2+ position_scale_rate * x +2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y +2 * size), \
-                                fill=(240, 0, 0), outline=(255, 255, 255))
+                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
+                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
+                                fill=(240, 0, 0), outline=(255, 255, 255)
+                            )
 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "BLUE":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y -2 * size, \
-                                X_SIZE / 2 + position_scale_rate * x +2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y +2 * size), \
+                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
+                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
                                 fill=(0, 0, 240), outline=(255, 255, 255))
 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "PURPLE":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y -2 * size, \
-                                X_SIZE / 2 + position_scale_rate * x +2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y +2 * size), \
+                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
+                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
                                 fill=(150, 0, 150), outline=(255, 255, 255))
                 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "NO":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x -2 * size, \
-                                X_SIZE / 2 + position_scale_rate * y -2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * x +2 * size, \
-                                Y_SIZE / 2 + position_scale_rate * y +2 * size), \
+                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
+                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
+                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
                                 fill=(50, 50, 50), outline=(255, 255, 255))
             
+            ttfontname = "./logotypejp_mp_m_1.1.ttf"
+            fontsize = size * 3
+            text = word
+            textRGB = (0, 0, 0)
+
+            text_position_x = X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2)
+            text_position_y = Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2)
+
+            font = ImageFont.truetype(ttfontname, fontsize)
+            textWidth, textHeight = draw.textsize(text,font=font)
+            draw.text((text_position_x, text_position_y), text, fill=textRGB, font=font)
+
+            if i == 0:
+                word_positions_in_pic = np.array([[X_SIZE / 2 + position_scale_rate * x, Y_SIZE / 2 + position_scale_rate * y]])
+            if i > 0:
+                a_2d_ex = np.array([[X_SIZE / 2 + position_scale_rate * x, Y_SIZE / 2 + position_scale_rate * y]])
+                word_positions_in_pic = np.append(word_positions_in_pic, a_2d_ex, axis=0)
 
         campus.save('pillow_imagedraw.jpg', quality=95)
 
-    def draw_thumbnail_crowd(self, DRAW_INDEX):
-        position_scale_rate = 500 / (self.x_max + 0.5) 
-        X_SIZE = 500
-        Y_SIZE = 500
+        print(word_positions_in_pic)
+
+        tri = Delaunay(word_positions_in_pic)
+        fig = delaunay_plot_2d(tri)
+        fig.savefig('scipy_matplotlib_delaunay.png')
+
+    def draw_thumbnail_crowd(self, DRAW_INDEX, X_SIZE, Y_SIZE):
+        position_scale_rate = X_SIZE / (self.x_max + 0.5) 
         campus = Image.open('pillow_imagedraw.jpg')
         #画像の貼り付け
         for item in self.elements_list[DRAW_INDEX].extracted_watch_info_dict.items():
