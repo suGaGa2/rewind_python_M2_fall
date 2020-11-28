@@ -75,7 +75,8 @@ class Watchs:
                 if len(feature) == 2:#'EOS'と''を省く
                     info = feature[1].split(',')
                     hinshi = info[0]
-                    if hinshi in ('名詞', '動詞'):
+                    # if hinshi in ('名詞', '動詞'):
+                    if hinshi in ('名詞'):
                         nounAndVerb.append(info[6])
 
             watch.tags = nounAndVerb
@@ -359,10 +360,7 @@ class Tset:
                     #print("y : " + str(t_element.extracted_watch_info_dict[video_id].position[1]))
                     #print( "frequency: " + str(t_element.extracted_watch_info_dict[video_id].view_num))
 
-
-
     def draw_word_crowd(self, DRAW_INDEX, X_SIZE, Y_SIZE):
-
         campus = Image.new('RGB', (X_SIZE, Y_SIZE), (128, 128, 128))
         position_scale_rate = X_SIZE / 2 * (self.x_max + 0.5) 
         draw = ImageDraw.Draw(campus)
@@ -377,7 +375,7 @@ class Tset:
 
 
             ttfontname = "./logotypejp_mp_m_1.1.ttf"
-            fontsize = size * 3
+            fontsize = size * 6
             text = word
             textRGB = (0, 0, 0)
 
@@ -413,10 +411,6 @@ class Tset:
                                 Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
                                 fill=(50, 50, 50), outline=(255, 255, 255))
             
-            ttfontname = "./logotypejp_mp_m_1.1.ttf"
-            fontsize = size * 3
-            text = word
-            textRGB = (0, 0, 0)
 
             text_position_x = X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2)
             text_position_y = Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2)
@@ -432,9 +426,10 @@ class Tset:
                 word_positions_in_pic = np.append(word_positions_in_pic, a_2d_ex, axis=0)
 
         campus.save('pillow_imagedraw.jpg', quality=95)
+        print(self.elements_list[DRAW_INDEX].word_count_dict)
+        #print(word_positions_in_pic)
 
-        print(word_positions_in_pic)
-
+        #ドロネー三角分割
         tri = Delaunay(word_positions_in_pic)
         fig = delaunay_plot_2d(tri)
         fig.savefig('scipy_matplotlib_delaunay.png')
@@ -453,7 +448,7 @@ class Tset:
                 aaa.write(image)
             
             img = Image.open("Thumbnail/" + item[0] + ".jpeg")
-            img_resize = img.resize((20*item[1].view_num, 15*item[1].view_num))
+            img_resize = img.resize((40*item[1].view_num, 30*item[1].view_num))
             campus.paste(img_resize, (int(X_SIZE / 2 + position_scale_rate * item[1].position[0] -2), \
                                       int(Y_SIZE / 2 + position_scale_rate * item[1].position[1] -2) )\
                         )
@@ -556,10 +551,37 @@ class Tset:
             S_X = H_X - H_X_semicolon_Y + 1.4
             height = np.append(height, S_X)
         print(len(height))
-        #文字を取り込む
-        fig = plt.figure()
-        p = plt.vlines([DRAW_INDEX], -1, 2.1, "red", linestyles='dashed') 
-        plt.plot(left, height)
+
+
+        plt.style.use("seaborn-dark")
+        for param in ['figure.facecolor', 'axes.facecolor', 'savefig.facecolor']:
+            plt.rcParams[param] = '#212946'  # bluish dark grey
+        for param in ['text.color', 'axes.labelcolor', 'xtick.color', 'ytick.color']:
+            plt.rcParams[param] = '0.9'  # very light grey
+        fig, ax = plt.subplots()
+        # 折れ線のメイン=水色
+        ax.plot(left, height, marker='o', color='#08F7FE')
+        n_shades = 10
+        diff_linewidth = 1.05
+        alpha_value = 0.3 / n_shades
+
+        # 折れ線の影=水色
+        for n in range(1, n_shades+1):
+            ax.plot(marker='o',linewidth=2+(diff_linewidth * n), alpha=alpha_value, legend=False, color='#08F7FE')
+        
+        ax.fill_between(left,height, color='#08F7FE', alpha=0.1)
+        
+        # Persistencyに応じて、色を変える
+        for value, i in zip(height, range(len(height))):
+            if i == 0:
+                prevalue = value
+                continue
+            if abs(value - prevalue)  > 0.7:
+                ax.plot(np.array([i-1, i]), np.array([prevalue, value]), marker='o', color='#FE53BB')
+                ax.fill_between(np.array([i-1, i]), np.array([prevalue, value]), color='#FE53BB', alpha=0.11)
+            prevalue = value
+        
+        ax.grid(color='#2A3459')
         fig.savefig("S_X.png") 
 
 '''
