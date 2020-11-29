@@ -381,62 +381,109 @@ class Tset:
 
             font = ImageFont.truetype(ttfontname, fontsize)
             textWidth, textHeight = draw.textsize(text,font=font)
+            X_center = X_SIZE / 2 + position_scale_rate * x
+            Y_center = Y_SIZE / 2 + position_scale_rate * y
 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "RED":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
-                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
+                draw.rectangle((X_center - (textWidth  / 2), \
+                                Y_center - (textHeight / 2), \
+                                X_center + (textWidth  / 2), \
+                                Y_center + (textHeight / 2)),\
                                 fill=(240, 0, 0), outline=(255, 255, 255)
                             )
 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "BLUE":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
-                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
+                draw.rectangle((X_center - (textWidth  / 2), \
+                                Y_center - (textHeight / 2), \
+                                X_center + (textWidth  / 2), \
+                                Y_center + (textHeight / 2)),\
                                 fill=(0, 0, 240), outline=(255, 255, 255))
 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "PURPLE":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
-                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
+                draw.rectangle((X_center - (textWidth  / 2), \
+                                Y_center - (textHeight / 2), \
+                                X_center + (textWidth  / 2), \
+                                Y_center + (textHeight / 2)),\
                                 fill=(150, 0, 150), outline=(255, 255, 255))
                 
             if self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color == "NO":
-                draw.rectangle((X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2), \
-                                X_SIZE / 2 + position_scale_rate * x + (textWidth  / 2), \
-                                Y_SIZE / 2 + position_scale_rate * y + (textHeight / 2)),\
+                draw.rectangle((X_center - (textWidth  / 2), \
+                                Y_center - (textHeight / 2), \
+                                X_center + (textWidth  / 2), \
+                                Y_center + (textHeight / 2)),\
                                 fill=(50, 50, 50), outline=(255, 255, 255))
             
 
-            text_position_x = X_SIZE / 2 + position_scale_rate * x - (textWidth  / 2)
-            text_position_y = Y_SIZE / 2 + position_scale_rate * y - (textHeight / 2)
+            text_position_x = X_center - (textWidth  / 2)
+            text_position_y = Y_center - (textHeight / 2)
 
             font = ImageFont.truetype(ttfontname, fontsize)
             textWidth, textHeight = draw.textsize(text,font=font)
             draw.text((text_position_x, text_position_y), text, fill=textRGB, font=font)
 
             if i == 0:
-                word_positions_in_pic = np.array([[X_SIZE / 2 + position_scale_rate * x, Y_SIZE / 2 + position_scale_rate * y]])
-            if i > 0:
-                a_2d_ex = np.array([[X_SIZE / 2 + position_scale_rate * x, Y_SIZE / 2 + position_scale_rate * y]])
-                word_positions_in_pic = np.append(word_positions_in_pic, a_2d_ex, axis=0)
+                word_positions_in_pic = np.array([[X_center, Y_center]])
+                # 別作業するためのDFを作らせてください。↓↓
+                # tmp_dfの一行 = [word, p_c_x, p_c_y, p_tl_x, p_tl_y, p_tr_x, p_tl_y, p_bl_x, p_bl_y, p_br_x, p_br_y, size]
+                '''
+                p_tl --------- p_tr
+                |                 |
+                |       p_c       |  <- size (= frequency = importance)
+                |                 |
+                p_bl ----------p_br
+                '''
+                tmp_df = pd.DataFrame(\
+                          [[word,\
+                            X_center,\
+                            Y_center,\
+                            X_center - (textWidth  / 2),\
+                            Y_center - (textHeight / 2),\
+                            X_center + (textWidth  / 2),\
+                            Y_center - (textHeight / 2),\
+                            X_center - (textWidth  / 2),\
+                            Y_center + (textHeight / 2),\
+                            X_center + (textWidth  / 2),\
+                            Y_center + (textHeight / 2),\
+                            size\
+                         ]]\
+                        )
 
-        campus.save('pillow_imagedraw.jpg', quality=95)
-        print(self.elements_list[DRAW_INDEX].word_count_dict)
+                tmp_df.columns = ['word', 'p_c_x', 'p_c_y', 'p_tl_x', 'p_tl_y', 'p_tr_x', 'p_tr_y', 'p_bl_x', 'p_bl_y', 'p_br_x', 'p_br_y', 'size']
+
+            if i > 0:
+                a_2d_ex = np.array([[X_center, Y_center]])
+                word_positions_in_pic = np.append(word_positions_in_pic, a_2d_ex, axis=0)
+                # 別作業するためのDFを作らせてください。↓↓
+                tmp_df = tmp_df.append({'word'  : word,\
+                                        'p_c_x'   : X_center,\
+                                        'p_c_y'   : Y_center,\
+                                        'p_tl_x'  : X_center - (textWidth  / 2),\
+                                        'p_tl_y'  : Y_center - (textHeight / 2),\
+                                        'p_tr_x'  : X_center + (textWidth  / 2),\
+                                        'p_tr_y'  : Y_center - (textHeight / 2),\
+                                        'p_bl_x'  : X_center - (textWidth  / 2),\
+                                        'p_bl_y'  : Y_center + (textHeight / 2),\
+                                        'p_br_x'  : X_center + (textWidth  / 2),\
+                                        'p_br_y'  : Y_center + (textHeight / 2),\
+                                        'size'  : size\
+                                        } , ignore_index=True)
+
+        print(tmp_df)
+        tmp_df.to_csv('./CSVs/positions_corners_size_csv_out.csv', index=False)
+
+        campus.save('./Images/pillow_imagedraw.jpg', quality=95)
+        #print(self.elements_list[DRAW_INDEX].word_count_dict)
         #print(word_positions_in_pic)
+        
 
         #ドロネー三角分割
         tri = Delaunay(word_positions_in_pic)
         fig = delaunay_plot_2d(tri)
-        fig.savefig('scipy_matplotlib_delaunay.png')
+        fig.savefig('./Images/scipy_matplotlib_delaunay.png')
 
     def draw_thumbnail_crowd(self, DRAW_INDEX, X_SIZE, Y_SIZE):
         position_scale_rate = X_SIZE / (self.x_max + 0.5) 
-        campus = Image.open('pillow_imagedraw.jpg')
+        campus = Image.open('./Images/pillow_imagedraw.jpg')
         #画像の貼り付け
         for item in self.elements_list[DRAW_INDEX].extracted_watch_info_dict.items():
             url = 'http://i.ytimg.com/vi/' + item[0] + "/mqdefault.jpg"
@@ -452,7 +499,7 @@ class Tset:
             campus.paste(img_resize, (int(X_SIZE / 2 + position_scale_rate * item[1].position[0] -2), \
                                       int(Y_SIZE / 2 + position_scale_rate * item[1].position[1] -2) )\
                         )
-            campus.save('pillow_imagedraw.jpg', quality=95)
+            campus.save('./Images/pillow_imagedraw.jpg', quality=95)
 
     def draw_significance_curve(self, TSET_INTERVAL_NUM, DRAW_INDEX):
         # significance curve 書く
@@ -582,7 +629,7 @@ class Tset:
             prevalue = value
         
         ax.grid(color='#2A3459')
-        fig.savefig("S_X.png") 
+        fig.savefig("./Images/S_X.png") 
 
 '''
 -------------------------------------------------------------------------------

@@ -8,7 +8,7 @@ WORDS_NUM_IN_A_CLOUD = 30
 DRAW_INDEX = 9
 
 # watchs
-watchs = Watchs('output.csv')
+watchs = Watchs('./CSVs/output.csv')
 
 # watch_listを作成
 watchs.construct_watch_list_all()
