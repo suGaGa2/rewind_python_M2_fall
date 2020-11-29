@@ -424,7 +424,7 @@ class Tset:
             if i == 0:
                 word_positions_in_pic = np.array([[X_center, Y_center]])
                 # 別作業するためのDFを作らせてください。↓↓
-                # tmp_dfの一行 = [word, p_c_x, p_c_y, p_tl_x, p_tl_y, p_tr_x, p_tl_y, p_bl_x, p_bl_y, p_br_x, p_br_y, size]
+                # tmp_dfの一行 = [word, p_c_x, p_c_y, p_tl_x, p_tl_y, p_tr_x, p_tl_y, p_bl_x, p_bl_y, p_br_x, p_br_y, size, color]
                 '''
                 p_tl --------- p_tr
                 |                 |
@@ -444,11 +444,12 @@ class Tset:
                             Y_center + (textHeight / 2),\
                             X_center + (textWidth  / 2),\
                             Y_center + (textHeight / 2),\
-                            size\
+                            size,\
+                            self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color\
                          ]]\
                         )
 
-                tmp_df.columns = ['word', 'p_c_x', 'p_c_y', 'p_tl_x', 'p_tl_y', 'p_tr_x', 'p_tr_y', 'p_bl_x', 'p_bl_y', 'p_br_x', 'p_br_y', 'size']
+                tmp_df.columns = ['word', 'p_c_x', 'p_c_y', 'p_tl_x', 'p_tl_y', 'p_tr_x', 'p_tr_y', 'p_bl_x', 'p_bl_y', 'p_br_x', 'p_br_y', 'size', 'color']
 
             if i > 0:
                 a_2d_ex = np.array([[X_center, Y_center]])
@@ -465,7 +466,8 @@ class Tset:
                                         'p_bl_y'  : Y_center + (textHeight / 2),\
                                         'p_br_x'  : X_center + (textWidth  / 2),\
                                         'p_br_y'  : Y_center + (textHeight / 2),\
-                                        'size'  : size\
+                                        'size'    : size,\
+                                        'color'   : self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color\
                                         } , ignore_index=True)
 
         print(tmp_df)
