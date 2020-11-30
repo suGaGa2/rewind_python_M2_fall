@@ -50,13 +50,26 @@ class Watchs:
         row_no = len(self.df)
         i = 0
         while i < row_no:
+            # たまにゴミデータがあるから、それはスキップ
+            try :
+                hoge = datetime.datetime.strptime(str(self.df.iat[i, 4]), '%b %d, %Y, %I:%M:%S %p JST')
+            except ValueError:
+                i += 1
+                continue
+
             watch = Watch(self.df.iat[i, 0], self.df.iat[i, 1], self.df.iat[i, 2], self.df.iat[i, 3], self.df.iat[i, 4])  
             self.watch_list_all.append(watch)
             i += 1
+            print(i)
+        #　３アカウントのデータをつなげたから、ここで時系列順にソート
+        self.watch_list_all = sorted(self.watch_list_all, key=lambda x: x.watch_datetime, reverse=True)
 
+        for el in self.watch_list_all:
+            print(el.watch_datetime)
         #　watchsの start_datetime と end_datetime を抽出
         self.watch_start_datetime_all = self.watch_list_all[0].watch_datetime
         self.watch_end_datetime_all = self.watch_list_all[-1].watch_datetime
+        
         
     def set_watch_list_selected(self, start_datetime, end_datetime):
         self.watch_list_selected.clear()
