@@ -80,10 +80,13 @@ class Wrecset:
                         self.df.iat[i, 8], self.df.iat[i, 9], self.df.iat[i, 10], self.df.iat[i, 11], self.df.iat[i, 12],\
                         i)  
             self.wrec_list.append(wrec)
-            i += 1 
+            i += 1
+        self.x_max = 0
+        self.x_min = 0
+        self.y_max = 0
+        self.y_min = 0
 
     def move(self):
-
         div_value = 10000
         for wrec in self.wrec_list:
             wrec.bfr_p_c = wrec.p_c
@@ -94,32 +97,39 @@ class Wrecset:
             wrec.p_tr = wrec.p_tr + wrec.f_all / div_value #　とりあえず10,000
             wrec.p_bl = wrec.p_bl + wrec.f_all / div_value #　とりあえず10,000
             wrec.p_br = wrec.p_br + wrec.f_all / div_value #　とりあえず10,000
-        
+            
+            print("wrec.f_all : " + str(wrec.f_all))
+            #print("bfr_p_c : " + str(wrec.bfr_p_c))
+            #print("aft_p_c : " + str(wrec.aft_p_c))
+            #print("**************")
         # 移動終了
+
+
+
         # ここでfaを計算しておく。
         for wrec in self.wrec_list:
             # エッジを超えたかを計算して、faを設定していく。
             # ①エッジの直線の方程式 (x1-x2) * (y-y1) - (y1-y2)*(x-x1) = 0　◀︎ 式（1）
-            wrec.fa = np.zeros(2)
+            wrec.fa = np.zeros(2) #◀︎一回リセット
             bfr_p_c = wrec.bfr_p_c
             aft_p_c = wrec.aft_p_c
 
             for mesh in wrec.belonged_mesh: #自分の属する全メッシュに対して
-                print(mesh)
-                print(wrec.index_num)
+                #print(mesh)
+                #print(wrec.index_num)
                 tmp_lst = []
                 for index in mesh:
                     if index != wrec.index_num:
                         tmp_lst.append(index)
                     
                 other_wrecs = np.array(tmp_lst)
-                print("other_wrecs")
-                print(other_wrecs)
-                print("____")
+                #print("other_wrecs")
+                #print(other_wrecs)
+                #print("____")
 
-                print(bfr_p_c)
-                print(wrec.fs)
-                print(aft_p_c)
+                #print(bfr_p_c)
+                #print(wrec.fs)
+                #print(aft_p_c)
                 p1 = self.wrec_list[other_wrecs[0]].p_c
                 p2 = self.wrec_list[other_wrecs[1]].p_c
                 s = (p1[0]- p2[0]) * (bfr_p_c[1]- p1[1]) - (p1[1]- p2[1]) * (bfr_p_c[0] - p1[0]) 
@@ -138,11 +148,11 @@ class Wrecset:
                 A = np.array( [ [bfr_p_c[1] - aft_p_c[1]  ,   aft_p_c[0] - bfr_p_c[0]], \
                                 [p1[1]      - p2[1]       ,   p2[0]      - p1[0]     ]  \
                                ])
-                print(A)
+                #print(A)
                 B = np.array( [ bfr_p_c[1] * aft_p_c[0] - bfr_p_c[0] *  aft_p_c[1],\
                                 p1[1]      * p2[0]      -  p1[0]     *       p2[1]  \
                               ])
-                print(B)
+                #print(B)
                 crossing_point = np.linalg.solve(A, B)
                 fa_direction = crossing_point - aft_p_c
 
@@ -206,7 +216,15 @@ while i < 2000:
         wrec.calculate_fs()
         wrec.calculate_fr()
         wrec.calculate_all_f()
-        wrec_set.move() #ここで、移動後次回のfaは計算ずみ。
+        '''
+        print("*************************")
+        print(wrec.belonged_mesh)
+        print("fs : " + str(wrec.fs))
+        print("fr : " + str(wrec.fr))
+        print("fa : " + str(wrec.fa))
+        print("f_all : " + str(wrec.f_all))
+        '''
+    wrec_set.move() #ここで、移動後次回のfaは計算ずみ。
     i += 1
 
 # word_positions_in_pic は wrec_set.wrec_list のINDEX順番と同じ。
@@ -219,48 +237,59 @@ for i, wrec in zip( range(len(wrec_set.wrec_list)), wrec_set.wrec_list):
 
 print(word_positions_in_pic)
 
+wrec_set.x_max = np.max(word_positions_in_pic, axis = 0)[0]
+wrec_set.y_max = np.max(word_positions_in_pic, axis = 0)[1]
+wrec_set.x_min = np.min(word_positions_in_pic, axis = 0)[0]
+wrec_set.y_min = np.min(word_positions_in_pic, axis = 0)[1]
+
+
+
 #ワードクラウド描画
-X_SIZE=3000
-Y_SIZE=3000
+X_SIZE = int(wrec_set.x_max - wrec_set.x_min + 400)
+Y_SIZE = int(wrec_set.y_max - wrec_set.y_min + 400)
+
+
+adjust_x = wrec_set.x_min - 200
+adjust_y = wrec_set.y_min - 200
 
 campus = Image.new('RGB', (X_SIZE, Y_SIZE), (128, 128, 128))
 draw = ImageDraw.Draw(campus)
 
 for wrec in wrec_set.wrec_list:    
     if wrec.color == "RED":
-        draw.rectangle((wrec.p_tl[0], \
-                        wrec.p_tl[1], \
-                        wrec.p_br[0], \
-                        wrec.p_br[1]), \
+        draw.rectangle((wrec.p_tl[0] - adjust_x, \
+                        wrec.p_tl[1] - adjust_y, \
+                        wrec.p_br[0] - adjust_x, \
+                        wrec.p_br[1] - adjust_y), \
                         fill=(240, 0, 0), outline=(255, 255, 255))
         print(wrec.p_tl[0])
 
     if wrec.color == "BLUE":
-        draw.rectangle((wrec.p_tl[0], \
-                        wrec.p_tl[1], \
-                        wrec.p_br[0], \
-                        wrec.p_br[1]), \
+        draw.rectangle((wrec.p_tl[0] - adjust_x, \
+                        wrec.p_tl[1] - adjust_y, \
+                        wrec.p_br[0] - adjust_x, \
+                        wrec.p_br[1] - adjust_y), \
                         fill=(0, 0, 240), outline=(255, 255, 255))
 
     if wrec.color == "PURPLE":
-        draw.rectangle((wrec.p_tl[0], \
-                        wrec.p_tl[1], \
-                        wrec.p_br[0], \
-                        wrec.p_br[1]), \
+        draw.rectangle((wrec.p_tl[0] - adjust_x, \
+                        wrec.p_tl[1] - adjust_y, \
+                        wrec.p_br[0] - adjust_x, \
+                        wrec.p_br[1] - adjust_y), \
                         fill=(150, 0, 150), outline=(255, 255, 255))
         
     if wrec.color == "NO":
-        draw.rectangle((wrec.p_tl[0], \
-                        wrec.p_tl[1], \
-                        wrec.p_br[0], \
-                        wrec.p_br[1]), \
+        draw.rectangle((wrec.p_tl[0] - adjust_x, \
+                        wrec.p_tl[1] - adjust_y, \
+                        wrec.p_br[0] - adjust_x, \
+                        wrec.p_br[1] - adjust_y), \
                         fill=(50, 50, 50), outline=(255, 255, 255))
     
     ttfontname = "./logotypejp_mp_m_1.1.ttf"
     fontsize = wrec.size * 6
     font = ImageFont.truetype(ttfontname, fontsize)
-    text_position_x = wrec.p_tl[0]
-    text_position_y = wrec.p_tl[1]
+    text_position_x = wrec.p_tl[0] - adjust_x
+    text_position_y = wrec.p_tl[1] - adjust_y
     textRGB = (20, 20, 20)
     text = wrec.word
     draw.text((text_position_x, text_position_y), text, fill=textRGB, font=font)
@@ -273,17 +302,7 @@ fig_2.savefig('./Images/scipy_matplotlib_delaunay_after.png')
 
 
 
-
 '''
-for wrec in wrec_set.wrec_list:
-    print(wrec.conneced_wrec_dict)
-'''
-
-
-'''
-x = word_positions_in_pic[:, 0]
-y = word_positions_in_pic[:, 1]
-
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
 ax.scatter(x,y)

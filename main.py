@@ -1,7 +1,7 @@
 from myModule import *
 
 #!!!!!!!!!!!  ここでインターバル数を決める。最低でも3以上にすること　！！     ！！！！！！!!!!!!!!!!!!!!!!!!!!!!!!!
-TSET_INTERVAL_NUM = 30
+TSET_INTERVAL_NUM = 45
 # 出現回数が閾値以降のものを残す時に、何個wordを残す(抽出する)かを決める値。 !!!!!!!!!!!!!!!!!!!!!!!!!
 WORDS_NUM_IN_A_CLOUD = 30
 # ワードクラウドとして描画する t_elementのINDEX
