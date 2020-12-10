@@ -1,25 +1,22 @@
 import datetime
 import numpy as np
-
 import sys
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import sip
-
 import pandas as pd
 from sklearn.manifold import MDS
 import matplotlib.pyplot as plt
 import math
 import copy
-
 from PIL import Image, ImageDraw, ImageFont
 import requests
 import os
-
 import MeCab
-
 from scipy.spatial import Delaunay, delaunay_plot_2d, Voronoi, voronoi_plot_2d
+import math
+import random 
 
 
 
@@ -373,6 +370,7 @@ class Tset:
                     #print("y : " + str(t_element.extracted_watch_info_dict[video_id].position[1]))
                     #print( "frequency: " + str(t_element.extracted_watch_info_dict[video_id].view_num))
 
+
     def draw_word_crowd(self, DRAW_INDEX, X_SIZE, Y_SIZE):
         campus = Image.new('RGB', (X_SIZE, Y_SIZE), (128, 128, 128))
         position_scale_rate = X_SIZE / 2 * (self.x_max + 0.5) 
@@ -385,10 +383,10 @@ class Tset:
             x = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].position[0]
             y = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].position[1]
             size = self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].frequency
-
+            size = int(math.log(size, 1.5) * 5)   ### ここ考えよ
 
             ttfontname = "./logotypejp_mp_m_1.1.ttf"
-            fontsize = size * 6
+            fontsize = size
             text = word
             textRGB = (0, 0, 0)
 
@@ -496,8 +494,43 @@ class Tset:
         fig = delaunay_plot_2d(tri)
         fig.savefig('./Images/scipy_matplotlib_delaunay.png')
 
-    def draw_thumbnail_crowd(self, DRAW_INDEX, X_SIZE, Y_SIZE):
-        position_scale_rate = X_SIZE / (self.x_max + 0.5) 
+    def draw_thumbnail_crowd_with_word(self, DRAW_INDEX, X_SIZE, Y_SIZE):
+        #　csvファイルオープンする
+        df = pd.read_csv("./CSVs/positions_corners_size_csv_out.csv")
+        position_scale_rate = X_SIZE / (self.x_max + 0.5)
+
+        for item in self.elements_list[DRAW_INDEX].extracted_watch_info_dict.items():
+            size = item[1].view_num
+            if int(math.log(size, 1.5) * 5) > 0:
+                size = int(math.log(size, 1.5) * 5)   ### ここ考えよ
+            elif int(math.log(size, 1.5) * 5) == 0:
+                size = 1
+            video_id = item[0]
+            X_center   = X_SIZE / 2 + position_scale_rate * item[1].position[0] 
+            Y_center   = Y_SIZE / 2 + position_scale_rate * item[1].position[1]
+            picWidth   = 32 * item[1].view_num
+            picHeight  = 24 * item[1].view_num
+
+
+            df = df.append({'word'    : video_id,\
+                            'p_c_x'   : X_center,\
+                            'p_c_y'   : Y_center,\
+                            'p_tl_x'  : X_center - (picWidth  / 2),\
+                            'p_tl_y'  : Y_center - (picHeight / 2),\
+                            'p_tr_x'  : X_center + (picWidth  / 2),\
+                            'p_tr_y'  : Y_center - (picHeight / 2),\
+                            'p_bl_x'  : X_center - (picWidth  / 2),\
+                            'p_bl_y'  : Y_center + (picHeight / 2),\
+                            'p_br_x'  : X_center + (picWidth  / 2),\
+                            'p_br_y'  : Y_center + (picHeight / 2),\
+                            'size'    : size,\
+                            'color'   : "Thumbnail"\
+                            } , ignore_index=True)
+            print("hoge")
+        print(df)
+        df.to_csv('./CSVs/withThumb_positions_corners_size_csv_out.csv', index=False)
+
+        ''''
         campus = Image.open('./Images/pillow_imagedraw.jpg')
         #画像の貼り付け
         for item in self.elements_list[DRAW_INDEX].extracted_watch_info_dict.items():
@@ -515,7 +548,7 @@ class Tset:
                                       int(Y_SIZE / 2 + position_scale_rate * item[1].position[1] -2) )\
                         )
             campus.save('./Images/pillow_imagedraw.jpg', quality=95)
-
+            '''
     def draw_significance_curve(self, TSET_INTERVAL_NUM, DRAW_INDEX):
         # significance curve 書く
         left   = np.array( range(TSET_INTERVAL_NUM-1) )
@@ -614,7 +647,28 @@ class Tset:
             height = np.append(height, S_X)
         print(len(height))
 
+        #Bokeh用にデータをcsvで吐き出し
+        i = 0
+        for sx_value in height:
+            if i == 0:
+                tmp_df = pd.DataFrame(\
+                            [[i,\
+                             sx_value,\
+                             self.elements_list[i].start_datetime,\
+                             self.elements_list[i].end_datetime\
+                            ]]\
+                            )
+                tmp_df.columns = ['i', 'sx_value', 'start_datetime', 'end_datetime']
+            if i > 0:
+                tmp_df = tmp_df.append({'i'         : i,\
+                                        'sx_value'  : sx_value,\
+                                        'start_datetime'   : self.elements_list[i].start_datetime,\
+                                        'end_datetime'     : self.elements_list[i].end_datetime\
+                                        } , ignore_index=True) 
+            i += 1
+        tmp_df.to_csv('./CSVs/S_X_output.csv', index=False)
 
+        # plot　S_X.png の作成
         plt.style.use("seaborn-dark")
         for param in ['figure.facecolor', 'axes.facecolor', 'savefig.facecolor']:
             plt.rcParams[param] = '#212946'  # bluish dark grey
@@ -694,7 +748,6 @@ class Wset:    #選び抜かれた、Wordクラウドに出てくるchannel id�
         # w element に position を入れる。この時に、x, yの最大値、最小値も調べておく。
         for (x, y), w_element in zip(X_2d, self.elements_dict.values()):
             w_element.position = np.array([x, y])
-        
     
     def print_w_set(self):
         for w_element in self.elements_dict.items():
