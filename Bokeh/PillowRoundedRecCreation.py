@@ -26,7 +26,8 @@ def word_image_creation(word, word_size, color, folder_path):
     dummy   = Image.new('RGBA', (100, 100), (0, 0, 0, 0))
     draw_d  = ImageDraw.Draw(dummy)
 
-    ttfontname = "./logotypejp_mp_m_1.1.ttf"
+    #ttfontname = "./logotypejp_mp_m_1.1.ttf"
+    ttfontname = "Bokeh/static/logotypejp_mp_m_1.1.ttf"
     fontsize = word_size
     font = ImageFont.truetype(ttfontname, fontsize)
     textRGB = (255,255,255)

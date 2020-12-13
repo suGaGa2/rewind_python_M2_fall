@@ -480,15 +480,12 @@ class Tset:
                                         'size'    : size,\
                                         'color'   : self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color\
                                         } , ignore_index=True)
-
         print(tmp_df)
         tmp_df.to_csv('./CSVs/positions_corners_size_csv_out.csv', index=False)
 
         campus.save('./Images/pillow_imagedraw.jpg', quality=95)
         #print(self.elements_list[DRAW_INDEX].word_count_dict)
         #print(word_positions_in_pic)
-        
-
         #ドロネー三角分割
         tri = Delaunay(word_positions_in_pic)
         fig = delaunay_plot_2d(tri)
