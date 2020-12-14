@@ -1,4 +1,4 @@
-from bokeh.models import DataTable, TableColumn, PointDrawTool, ColumnDataSource, ImageURL, Plot, Range1d, DatetimeTickFormatter
+from bokeh.models import DataTable, TableColumn, PointDrawTool, BoxSelectTool, ColumnDataSource, ImageURL, Plot, Range1d, DatetimeTickFormatter,  Circle
 from bokeh.plotting import figure, output_file, show, Column, Row
 from bokeh.io import curdoc, save
 
@@ -13,13 +13,6 @@ from datetime import datetime as dt
 from PIL import Image, ImageDraw, ImageFont
 from PillowRoundedRecCreation import word_image_creation
 
-
-'''
-def slider_onchange(attr, old, new):
-    a = slider.value
-    image_tcrd = ImageURL(url="url_list", x="p_c_x", y="p_c_y", w="w", h="h", global_alpha=slider.value,  anchor="center")
-    r_tcrd_2 = p_crd.add_glyph(source_tcrd, image_tcrd)
-'''
 
 #df_sx   = pd.read_csv("../CSVs/S_X_output.csv")
 df_sx   = pd.read_csv("Bokeh/CSVs/S_X_output.csv")
@@ -47,11 +40,28 @@ TOOLTIPS = [
 ]
 
 curdoc().theme = 'night_sky'
-p_sx =  figure(plot_width=600, plot_height=450,tooltips=TOOLTIPS,
+p_sx =  figure(plot_width=600, plot_height=450,
+               tools='pan,wheel_zoom, box_zoom, box_select,undo,redo,save,reset,help',
+               tooltips=TOOLTIPS,
                title="Significanse Curve", x_axis_type='datetime')        #p = <class 'bokeh.plotting.figure.Figure'>
 
-p_sx.line(  x='start_datetime_dt', y='sx_value', source=source_sx, line_width=4, color='#08F7FE')
-p_sx.circle(x='start_datetime_dt', y='sx_value', source=source_sx)
+renderer_line = p_sx.line(  x='start_datetime_dt', y='sx_value', source=source_sx, line_width=4, color='#08F7FE', 
+                            selection_alpha=1,
+                            nonselection_alpha=1,
+)
+
+
+renderer_circle = p_sx.circle(x='start_datetime_dt', y='sx_value', source=source_sx, color='#08F7FE')
+selected_circle = Circle(fill_alpha = 1, fill_color='#FE53BB')
+nonselected_circle = Circle(fill_alpha=0.2, fill_color='#08F7FE', line_color="blue")
+renderer_circle.selection_glyph = selected_circle
+renderer_circle.nonselection_glyph = nonselected_circle
+
+
+
+select_overlay = p_sx.select_one(BoxSelectTool).overlay
+select_overlay.fill_color = "firebrick"
+select_overlay.line_color = None
 #----------------------------------------------------------------------------------------#
 # Thumbnail Crowdの表示
 df_crd = pd.read_csv("Bokeh/CSVs/afrer_forced_output.csv")
@@ -129,8 +139,8 @@ source_wcrd = ColumnDataSource(
 )
 
 source_tcrd = ColumnDataSource(
-    data = {'p_c_x': p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
-            'url_list': url_list_tcrd, 'w' : w_list_tcrd, 'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd}
+    data = {'p_c_x'   : p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
+            'url_list': url_list_tcrd,   'w' : w_list_tcrd, 'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd}
 )
 
 
@@ -157,13 +167,14 @@ btn_tcrd.on_click(btn_tcrd_onclick)
 btn_wt_crd = Button(label="Word & Thumbnail",  button_type="success")
 btn_wt_crd.on_click(btn_wt_crd_onclick)
 '''
+
+toggle_sx = Toggle(label="Persistence", button_type="success", active=True)
 toggle1 = Toggle(label="Word", button_type="success", active=True)
 toggle1.js_link('active', r_wcrd_2, 'visible')
 
 toggle2 = Toggle(label="Thumbnail", button_type="success", active=True)
 toggle2.js_link('active', r_tcrd_2, 'visible')
 
-thubmnail_alpha_slider = Slider(start=0, end=10, value=1, step=.1, title="Stuff")
 slider = Slider(start=0, end=1, value=1, step=.1, title="Alpha Value")
 #slider.on_change('value', slider_onchange)
 slider.js_link('value', image_tcrd, 'global_alpha')
