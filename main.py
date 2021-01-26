@@ -3,9 +3,9 @@ from myModule import *
 #!!!!!!!!!!!  ここでインターバル数を決める。最低でも3以上にすること　！！     ！！！！！！!!!!!!!!!!!!!!!!!!!!!!!!!
 TSET_INTERVAL_NUM = 45
 # 出現回数が閾値以降のものを残す時に、何個wordを残す(抽出する)かを決める値。 !!!!!!!!!!!!!!!!!!!!!!!!!
-WORDS_NUM_IN_A_CLOUD = 30
+WORDS_NUM_IN_A_CLOUD = 36
 # ワードクラウドとして描画する t_elementのINDEX
-DRAW_INDEX = 12
+DRAW_INDEX = 14
 
 # watchs
 watchs = Watchs('./CSVs/output.csv')
@@ -41,9 +41,13 @@ t_set.set_t_element_extracted_watch_list(watchs)
 
 #print(t_set.elements_list[5].word_count_dict)
 
-# ワードクラウドの表示
+# ワードクラウドの表示 
+# → positions_corners_size_csv_out.csv　に書き出し
 t_set.draw_word_crowd(DRAW_INDEX, X_SIZE=600, Y_SIZE=600)
-# サムネイル クラウドの表示
+
+# サムネイル クラウドの表示 
+# →　positions_corners_size_csv_out.csv に 
+# →　サムネイルの位置を追加して withThumb_positions_corners_size_csv_out.csv に追加
 t_set.draw_thumbnail_crowd_with_word(DRAW_INDEX, X_SIZE=600, Y_SIZE=600)
 
 # significance curveの表示

@@ -26,7 +26,7 @@ class Watch:
         self.video_id = video_id
         self.channel_name = channel_name
         self.channel_id = channel_id
-        self.watch_datetime = datetime.datetime.strptime(str(watch_datetime), '%b %d, %Y, %I:%M:%S %p JST')
+        self.watch_datetime = datetime.datetime.strptime(str(watch_datetime), '%Y-%m-%d %H:%M:%S')
         self.tags = []
 
 
@@ -49,7 +49,13 @@ class Watchs:
         while i < row_no:
             # たまにゴミデータがあるから、それはスキップ
             try :
-                hoge = datetime.datetime.strptime(str(self.df.iat[i, 4]), '%b %d, %Y, %I:%M:%S %p JST')
+                #hoge = datetime.datetime.strptime(str(self.df.iat[i, 4]), '%b %d, %Y, %I:%M:%S %p JST')
+                text = str(self.df.iat[i, 4]).replace(" を視聴しました", '')
+                print( text )
+                self.df.iat[i, 4] = datetime.datetime.strptime(text, '%Y/%m/%d %H:%M:%S JST')
+
+                #print( str(self.df.iat[i, 4])  + "test")
+                #hoge = datetime.datetime.strptime(str(self.df.iat[i, 4]), '%Y/%m/%d %H:%M:%S JST')
             except ValueError:
                 i += 1
                 continue

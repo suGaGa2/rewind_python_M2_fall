@@ -1,4 +1,4 @@
-from bokeh.models import DataTable, TableColumn, PointDrawTool, BoxSelectTool, ColumnDataSource, ImageURL, Plot, Range1d, DatetimeTickFormatter,  Circle
+from bokeh.models import DataTable, TableColumn, PointDrawTool,BoxSelectTool, ColumnDataSource, ImageURL,Plot, Range1d, DatetimeTickFormatter,  Circle, Slope, BoxAnnotation, CustomJS, Band
 from bokeh.plotting import figure, output_file, show, Column, Row
 from bokeh.io import curdoc, save
 
@@ -9,12 +9,14 @@ import requests
 import os
 import numpy as np
 from datetime import datetime as dt
-
+from datetime import timedelta
 from PIL import Image, ImageDraw, ImageFont
 from PillowRoundedRecCreation import word_image_creation
 
+INDEX = 14
+THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/withThumb_positions_corners_size_csv_out"
 
-#df_sx   = pd.read_csv("../CSVs/S_X_output.csv")
+
 df_sx   = pd.read_csv("Bokeh/CSVs/S_X_output.csv")
 sx_value_list = df_sx["sx_value"].values.tolist()
 index_list = df_sx["i"].values.tolist()
@@ -27,44 +29,84 @@ end_datetime_list_str = list(map(lambda x: x.split(".")[0], end_datetime_list))
 end_datetime_list_dt = list(map(lambda x: dt.strptime(x, '%Y-%m-%d %H:%M:%S') , end_datetime_list_str))
 
 print(type(start_datetime_list[1]))
+
+# SOURCE_SX
 source_sx = ColumnDataSource(
     data = {'index': index_list, 'sx_value': sx_value_list,\
             'start_datetime_str' : start_datetime_list_str, 'end_datetime_str' : end_datetime_list_str,\
             'start_datetime_dt' : start_datetime_list_dt,   'end_datetime_dt'  : end_datetime_list_dt}
 )
+
+
+source_sx_persistency = ColumnDataSource(
+    data = {'index': [], 'sx_value': [],\
+            'start_datetime_str' : [], 'end_datetime_str':[],\
+            'start_datetime_dt'  : [],  'end_datetime_dt' :[]}
+)
+
 TOOLTIPS = [
     ("index",          "@index"),
     ("sx_value",       "@sx_value"),
     ("start_datetime", "@start_datetime_str"),
     ("end_datetime",   "@end_datetime_str")
 ]
-
+#**************************************************************
 curdoc().theme = 'night_sky'
+#**************************************************************
 p_sx =  figure(plot_width=600, plot_height=450,
-               tools='pan,wheel_zoom, box_zoom, box_select,undo,redo,save,reset,help',
+               tools='pan,wheel_zoom, box_zoom, box_select, crosshair, undo,redo,save,reset,help',
                tooltips=TOOLTIPS,
-               title="Significanse Curve", x_axis_type='datetime')        #p = <class 'bokeh.plotting.figure.Figure'>
+               title="Significanse Curve", x_axis_type='datetime',
+               background_fill_color = "#282C44",
+               background_fill_alpha = 1)       #p = <class 'bokeh.plotting.figure.Figure'>
+p_sx.yaxis.minor_tick_in = 5
 
-renderer_line = p_sx.line(  x='start_datetime_dt', y='sx_value', source=source_sx, line_width=4, color='#08F7FE', 
+'''
+p_sx.title.text_color = "#08F7FE"
+p_sx.yaxis.major_label_text_color = "#08F7FE"
+p_sx.xaxis.major_label_text_color = "#08F7FE"
+'''
+
+renderer_line = p_sx.line(  x='start_datetime_dt', y='sx_value', source=source_sx,
+                            line_width=2, color='#08F7FE',
+                            line_alpha=0.7,
                             selection_alpha=1,
                             nonselection_alpha=1,
 )
+band = Band(base='start_datetime_dt', lower=0, upper='sx_value', source=source_sx, level='underlay',
+            fill_color='#08F7FE', fill_alpha=0.1, line_width=0, line_color='black')
+p_sx.add_layout(band)
+#*******************************************************************
+renderer_circle = p_sx.circle(x='start_datetime_dt', y='sx_value',
+                              source=source_sx, size = 7,
+                              fill_color='#08F7FE', fill_alpha=0.3,
+                              line_color='#08F7FE', line_width=2)
 
-
-renderer_circle = p_sx.circle(x='start_datetime_dt', y='sx_value', source=source_sx, color='#08F7FE')
 selected_circle = Circle(fill_alpha = 1, fill_color='#FE53BB')
 nonselected_circle = Circle(fill_alpha=0.2, fill_color='#08F7FE', line_color="blue")
 renderer_circle.selection_glyph = selected_circle
 renderer_circle.nonselection_glyph = nonselected_circle
-
-
-
 select_overlay = p_sx.select_one(BoxSelectTool).overlay
 select_overlay.fill_color = "firebrick"
 select_overlay.line_color = None
+# ***********************************************:
+box = BoxAnnotation(bottom=10, fill_alpha=0.1, fill_color='red')
+p_sx.add_layout(box)
+
+
+p_sx.circle(x='start_datetime_dt', y='sx_value',
+             source=source_sx_persistency, size=10,
+             fill_color='fuchsia', fill_alpha=0.5,
+             line_color='crimson', line_width=1)
+
+
+
+
+
 #----------------------------------------------------------------------------------------#
 # Thumbnail Crowdの表示
-df_crd = pd.read_csv("Bokeh/CSVs/afrer_forced_output.csv")
+#df_crd = pd.read_csv("Bokeh/CSVs/afrer_forced_output"+ "_"+ str(INDEX)+".csv")
+df_crd = pd.read_csv(THUMBNAIL_CROWD_PATH+ "_"+ str(INDEX)+".csv")
 #===========================================================================
 df_wcrd = df_crd[df_crd["color"] != "Thumbnail"]
 p_c_x_list_wcrd = df_wcrd["p_c_x"].values.tolist()
@@ -168,6 +210,32 @@ btn_wt_crd = Button(label="Word & Thumbnail",  button_type="success")
 btn_wt_crd.on_click(btn_wt_crd_onclick)
 '''
 
+slider_sx = Slider(start=0, end=5, value=5, step=.1, title="Persistency")
+slider_sx.js_on_change('value',
+                      CustomJS(args=dict(box=box, source_sx=source_sx, source_sx_persistency=source_sx_persistency),
+    code="""
+    box.bottom= cb_obj.value;
+    var d1 = source_sx.data;
+    const d2 = {'index': [], 'sx_value': [],
+                'start_datetime_str': [], 'end_datetime_str' : [], 
+                'start_datetime_dt':  [], 'end_datetime_dt'  : []};
+    for (var i = 0; i < d1['index'].length; i++) {
+        if (d1['sx_value'][i] > cb_obj.value) {
+                d2['index'].push(             d1['index'][i]);
+                d2['sx_value'].push(          d1['sx_value'][i]);
+                d2['start_datetime_str'].push(d1['start_datetime_str'][i]);
+                d2['end_datetime_str'].push(  d1['end_datetime_str'][i]);
+                d2['start_datetime_dt'].push( d1['start_datetime_dt'][i]);
+                d2['end_datetime_dt'].push(   d1['end_datetime_dt'][i]);
+            }
+
+    }
+    source_sx_persistency.data = d2;
+    console.log(d2);
+    source_sx_persistency.change.emit();
+    """))
+
+
 toggle_sx = Toggle(label="Persistence", button_type="success", active=True)
 toggle1 = Toggle(label="Word", button_type="success", active=True)
 toggle1.js_link('active', r_wcrd_2, 'visible')
@@ -182,17 +250,18 @@ slider.js_link('value', image_tcrd, 'global_alpha')
 toggles = Row(toggle1, toggle2)
 controles=Column(toggles, slider)
 
+
 columns = [
-        TableColumn(field="p_c_x", title="p_c_x"),
-        TableColumn(field="p_c_y", title="p_c_y")
+        TableColumn(field="start_datetime_dt", title="start_datetime_dt"),
+        TableColumn(field="sx_value", title="sx_value")
           ]
-data_table = DataTable(source=source_tcrd, columns=columns, width=400, height=280)
+data_table = DataTable(source=source_sx_persistency, columns=columns, width=400, height=280)
 
-
-p_crd_layout = Column(p_crd, controles, data_table)
+p_sx_layout  = Column(p_sx, slider_sx, controles)
+p_crd_layout = Column(p_crd, data_table)
 
 #最後の部分
-plots = Row(p_sx, p_crd_layout)
+plots = Row(p_sx_layout, p_crd_layout)
 #output_file("MOGE.html")
 show(plots)
 curdoc().add_root(plots)
