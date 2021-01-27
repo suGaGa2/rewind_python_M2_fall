@@ -15,10 +15,11 @@ from PillowRoundedRecCreation import word_image_creation
 
 
 TSET_INTERVAL_NUM = 45
-INDEX = 14
-DATA_PATH = THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
-
 FIRST_DRAW_INDEX  = 0 #初期に描画する時間窓のINDEX
+#INDEX = 14
+#DATA_PATH = THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
+
+
 
 
 df_sx   = pd.read_csv("Bokeh/CSVs/S_X_output.csv")
@@ -126,13 +127,13 @@ df_crd = pd.read_csv(DATA_PATH)
 df_crd['draw_index'] = INDEX
 
 INDEX += 1
-#while INDEX < TSET_INTERVAL_NUM:
-while INDEX < 2:
+while INDEX < TSET_INTERVAL_NUM:
     DATA_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
     df_will_appended = pd.read_csv(DATA_PATH)
     df_will_appended['draw_index'] = INDEX
     df_crd = pd.concat([df_crd, df_will_appended])
     INDEX += 1
+    print("processing INDEX " + str(INDEX))
 
 #===========================================================================
 
@@ -176,7 +177,7 @@ p_bl_y_list_tcrd = df_tcrd["p_bl_y"].values.tolist()
 p_tl_y_list_tcrd = df_tcrd["p_tl_y"].values.tolist()
 h_list_tcrd = (np.array(p_bl_y_list_tcrd) - np.array(p_tl_y_list_tcrd)).tolist()
 
-draw_index_list_tcrd = df_wcrd["draw_index"].values.tolist()
+draw_index_list_tcrd = df_tcrd["draw_index"].values.tolist()
 extract_start_index_tcrd      = draw_index_list_tcrd.index(FIRST_DRAW_INDEX)  # FIRST_DRAW_INDEXがはじまる位置．はじめに描画する p_crd の時間窓のINDEXを得るため
 extract_element_num_tcrd      = draw_index_list_tcrd.count(FIRST_DRAW_INDEX)  # FIRST_DRAW_INDEXの個数．はじめに描画する p_crd の時間窓のINDEXを得るため
 extract_end_index_tcrd       = extract_start_index_tcrd + extract_element_num_tcrd - 1 # FIRST_DRAW_INDEXがおわる位置．
@@ -208,7 +209,8 @@ for index, row in df_crd.iterrows():
 # 【ワード用】全 Draw Index の情報が詰まった ColumnDataSource
 source_wcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_wcrd, 'p_c_y': p_c_y_list_wcrd,\
-            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd, 'draw_index' : draw_index_list_wcrd}
+            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd,
+            'alpha' : alpha_list_wcrd, 'draw_index' : draw_index_list_wcrd}
 )
 
 # 【ワード用】描画するようの ColumnDataSource
@@ -301,7 +303,7 @@ slider_alpha_Value = Slider(start=0, end=1, value=1, step=.1, title="Alpha Value
 #slider.on_change('value', slider_onchange)
 slider_alpha_Value.js_link('value', image_tcrd, 'global_alpha')
 
-silder_draw_index = Slider(start=0, end=1, value=FIRST_DRAW_INDEX, step=-1, title="Draw Index", direction="rtl", sizing_mode='stretch_width')
+silder_draw_index = Slider(start=0, end=TSET_INTERVAL_NUM-1, value=FIRST_DRAW_INDEX, step=-1, title="Draw Index", direction="rtl", sizing_mode='stretch_width')
 callback = CustomJS(
         args=dict(
             source_wcrd=source_wcrd, source_wcrd_view=source_wcrd_view,
