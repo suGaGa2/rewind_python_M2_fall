@@ -1,4 +1,4 @@
-from bokeh.models import DataTable, TableColumn, PointDrawTool,BoxSelectTool, ColumnDataSource, ImageURL,Plot, Range1d, DatetimeTickFormatter,  Circle, Slope, BoxAnnotation, CustomJS, Band
+from bokeh.models import DataTable, TableColumn, PointDrawTool,BoxSelectTool, ColumnDataSource, ImageURL,Plot, Range1d, DatetimeTickFormatter,  Circle, Slope, BoxAnnotation, CustomJS, Band, CDSView,
 from bokeh.plotting import figure, output_file, show, Column, Row
 from bokeh.io import curdoc, save
 
@@ -13,6 +13,8 @@ from datetime import timedelta
 from PIL import Image, ImageDraw, ImageFont
 from PillowRoundedRecCreation import word_image_creation
 
+
+TSET_INTERVAL_NUM = 45
 INDEX = 14
 DATA_PATH = THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
 
@@ -61,11 +63,6 @@ p_sx =  figure(plot_width=600, plot_height=450,
                background_fill_alpha = 1)       #p = <class 'bokeh.plotting.figure.Figure'>
 p_sx.yaxis.minor_tick_in = 5
 
-'''
-p_sx.title.text_color = "#08F7FE"
-p_sx.yaxis.major_label_text_color = "#08F7FE"
-p_sx.xaxis.major_label_text_color = "#08F7FE"
-'''
 
 renderer_line = p_sx.line(  x='start_datetime_dt', y='sx_value', source=source_sx,
                             line_width=2, color='#08F7FE',
@@ -103,7 +100,19 @@ p_sx.circle(x='start_datetime_dt', y='sx_value',
 
 #----------------------------------------------------------------------------------------#
 # Thumbnail Crowdの表示
+INDEX = 0
+DATA_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
 df_crd = pd.read_csv(DATA_PATH)
+df_crd['draw_index'] = INDEX
+
+INDEX += 1
+while INDEX < TSET_INTERVAL_NUM:
+    DATA_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
+    df_will_appended = pd.read_csv(DATA_PATH)
+    df_will_appended['draw_index'] = INDEX
+    df_crd = pd.concat([df_crd, df_will_appended)
+    INDEX += 1
+
 #===========================================================================
 df_wcrd = df_crd[df_crd["color"] != "Thumbnail"]
 p_c_x_list_wcrd = df_wcrd["p_c_x"].values.tolist()
@@ -119,6 +128,8 @@ w_list_wcrd = (np.array(p_br_x_list_wcrd) - np.array(p_bl_x_list_wcrd)).tolist()
 p_bl_y_list_wcrd = df_wcrd["p_bl_y"].values.tolist()
 p_tl_y_list_wcrd = df_wcrd["p_tl_y"].values.tolist()
 h_list_wcrd = (np.array(p_bl_y_list_wcrd) - np.array(p_tl_y_list_wcrd)).tolist()
+
+index_list_wcrd = df_wcrd["index"].values.tolist()
 
 alpha_list_wcrd = np.ones(len(df_wcrd))
 # **************************************************************************************
@@ -137,25 +148,11 @@ p_bl_y_list_tcrd = df_tcrd["p_bl_y"].values.tolist()
 p_tl_y_list_tcrd = df_tcrd["p_tl_y"].values.tolist()
 h_list_tcrd = (np.array(p_bl_y_list_tcrd) - np.array(p_tl_y_list_tcrd)).tolist()
 
+index_list_tcrd = df_wcrd["index"].values.tolist()
+
 alpha_list_tcrd = np.ones(len(df_tcrd))
-#=======================================================
-'''
-df_crd = pd.read_csv("Bokeh/CSVs/afrer_forced_output.csv")
-p_c_x_list = df_crd["p_c_x"].values.tolist()
-p_c_y_list = df_crd["p_c_y"].values.tolist()
 
-word_list = df_crd["word"].values.tolist()
-url_list = list(map(lambda x: "Bokeh/static/IMAGEs/" + x + ".png", word_list))
-#url_list  = list(map(lambda x: "./IMAGES/" + x + ".png", word_list))
 
-p_br_x_list = df_crd["p_br_x"].values.tolist()
-p_bl_x_list = df_crd["p_bl_x"].values.tolist()
-w_list = (np.array(p_br_x_list) - np.array(p_bl_x_list)).tolist()
-
-p_bl_y_list = df_crd["p_bl_y"].values.tolist()
-p_tl_y_list = df_crd["p_tl_y"].values.tolist()
-h_list = (np.array(p_bl_y_list) - np.array(p_tl_y_list)).tolist()
-'''
 ###***************************************************************************
 for index, row in df_crd.iterrows():
     if not os.path.exists('Bokeh/static/IMAGEs/' + row['word']  + ".png"):
@@ -174,12 +171,13 @@ for index, row in df_crd.iterrows():
 
 source_wcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_wcrd, 'p_c_y': p_c_y_list_wcrd,\
-            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd}
+            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd, 'index' : index_list_wcrd}
 )
+booleans = [ True if index == 2 else False for index in source_wcrd.data['index'] ]
 
 source_tcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
-            'url_list': url_list_tcrd,   'w' : w_list_tcrd, 'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd}
+            'url_list': url_list_tcrd,   'w'    : w_list_tcrd,   'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd, 'index' : index_list_tcrd}
 )
 
 
@@ -198,14 +196,6 @@ draw_tool = PointDrawTool(renderers=[r_wcrd_1, r_wcrd_2, r_tcrd_1, r_tcrd_2])
 p_crd.add_tools(draw_tool)
 p_crd.toolbar.active_tap = draw_tool
 
-'''
-btn_wcrd = Button(label="Word")
-btn_wcrd.on_click(btn_wcrd_onclick)
-btn_tcrd = Button(label="Thumbnail", button_type="success")
-btn_tcrd.on_click(btn_tcrd_onclick)
-btn_wt_crd = Button(label="Word & Thumbnail",  button_type="success")
-btn_wt_crd.on_click(btn_wt_crd_onclick)
-'''
 
 slider_sx = Slider(start=0, end=5, value=5, step=.1, title="Persistency")
 slider_sx.js_on_change('value',
@@ -231,6 +221,7 @@ slider_sx.js_on_change('value',
     console.log(d2);
     source_sx_persistency.change.emit();
     """))
+
 
 
 toggle_sx = Toggle(label="Persistence", button_type="success", active=True)
