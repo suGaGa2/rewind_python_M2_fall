@@ -1,4 +1,4 @@
-from bokeh.models import DataTable, TableColumn, PointDrawTool,BoxSelectTool, ColumnDataSource, ImageURL,Plot, Range1d, DatetimeTickFormatter,  Circle, Slope, BoxAnnotation, CustomJS, Band, CDSView,
+from bokeh.models import DataTable, TableColumn, PointDrawTool,BoxSelectTool, ColumnDataSource, ImageURL,Plot, Range1d, DatetimeTickFormatter,  Circle, Slope, BoxAnnotation, CustomJS, Band, CDSView, Spinner
 from bokeh.plotting import figure, output_file, show, Column, Row
 from bokeh.io import curdoc, save
 
@@ -52,6 +52,8 @@ TOOLTIPS = [
     ("start_datetime", "@start_datetime_str"),
     ("end_datetime",   "@end_datetime_str")
 ]
+
+
 #**************************************************************
 curdoc().theme = 'night_sky'
 #**************************************************************
@@ -106,14 +108,18 @@ df_crd = pd.read_csv(DATA_PATH)
 df_crd['draw_index'] = INDEX
 
 INDEX += 1
-while INDEX < TSET_INTERVAL_NUM:
+#while INDEX < TSET_INTERVAL_NUM:
+while INDEX < 2:
     DATA_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
     df_will_appended = pd.read_csv(DATA_PATH)
     df_will_appended['draw_index'] = INDEX
-    df_crd = pd.concat([df_crd, df_will_appended)
+    df_crd = pd.concat([df_crd, df_will_appended])
     INDEX += 1
 
 #===========================================================================
+
+
+
 df_wcrd = df_crd[df_crd["color"] != "Thumbnail"]
 p_c_x_list_wcrd = df_wcrd["p_c_x"].values.tolist()
 p_c_y_list_wcrd = df_wcrd["p_c_y"].values.tolist()
@@ -129,7 +135,7 @@ p_bl_y_list_wcrd = df_wcrd["p_bl_y"].values.tolist()
 p_tl_y_list_wcrd = df_wcrd["p_tl_y"].values.tolist()
 h_list_wcrd = (np.array(p_bl_y_list_wcrd) - np.array(p_tl_y_list_wcrd)).tolist()
 
-index_list_wcrd = df_wcrd["index"].values.tolist()
+draw_index_list_wcrd = df_wcrd["draw_index"].values.tolist()
 
 alpha_list_wcrd = np.ones(len(df_wcrd))
 # **************************************************************************************
@@ -148,7 +154,7 @@ p_bl_y_list_tcrd = df_tcrd["p_bl_y"].values.tolist()
 p_tl_y_list_tcrd = df_tcrd["p_tl_y"].values.tolist()
 h_list_tcrd = (np.array(p_bl_y_list_tcrd) - np.array(p_tl_y_list_tcrd)).tolist()
 
-index_list_tcrd = df_wcrd["index"].values.tolist()
+draw_index_list_tcrd = df_wcrd["draw_index"].values.tolist()
 
 alpha_list_tcrd = np.ones(len(df_tcrd))
 
@@ -169,28 +175,49 @@ for index, row in df_crd.iterrows():
             img_resize = img.resize( (int((row['p_br_x'] - row['p_bl_x']) / 2), int((row['p_bl_y'] - row['p_tl_y']) / 2)) )
 
 
+
+
+# *************************************************
+# 【ワード用】全 Draw Index の情報が詰まった ColumnDataSource
 source_wcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_wcrd, 'p_c_y': p_c_y_list_wcrd,\
-            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd, 'index' : index_list_wcrd}
+            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd, 'draw_index' : draw_index_list_wcrd}
 )
-booleans = [ True if index == 2 else False for index in source_wcrd.data['index'] ]
 
+# 【ワード用】描画するようの ColumnDataSource
+source_wcrd_view = ColumnDataSource(
+    data = {'p_c_x'   : p_c_x_list_wcrd, 'p_c_y': p_c_y_list_wcrd,\
+            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd, 'draw_index' : draw_index_list_wcrd}
+)
+
+
+# ***************************************************
+# 【サムネイル用】全 Draw Index の情報が詰まった ColumnDataSource
 source_tcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
-            'url_list': url_list_tcrd,   'w'    : w_list_tcrd,   'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd, 'index' : index_list_tcrd}
+            'url_list': url_list_tcrd,   'w'    : w_list_tcrd,   'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd, 'draw_index' : draw_index_list_tcrd}
 )
+
+# 【サムネイル用】描画するようの ColumnDataSource
+source_tcrd_view = ColumnDataSource(
+    data = {'p_c_x'   : p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
+            'url_list': url_list_tcrd,   'w'    : w_list_tcrd,   'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd, 'draw_index' : draw_index_list_tcrd}
+)
+
+
+# ****************************************************
 
 
 p_crd =  figure(plot_width=900, plot_height=540,
                title="Crowd", match_aspect=True, tools='pan,wheel_zoom,box_zoom,undo,redo,save,reset,help') 
 
-r_wcrd_1 = p_crd.circle(x='p_c_x', y='p_c_y', source=source_wcrd, color='red', alpha=0, size=10)
+r_wcrd_1 = p_crd.circle(x='p_c_x', y='p_c_y', source=source_wcrd_view, color='red', alpha=0, size=10)
 image_wcrd = ImageURL(url="url_list", x="p_c_x", y="p_c_y", w="w", h="h", anchor="center")
-r_wcrd_2 = p_crd.add_glyph(source_wcrd, image_wcrd)
+r_wcrd_2 = p_crd.add_glyph(source_wcrd_view, image_wcrd)
 
-r_tcrd_1 = p_crd.circle(x='p_c_x', y='p_c_y', source=source_tcrd, color='red', alpha=0, size=10)
+r_tcrd_1 = p_crd.circle(x='p_c_x', y='p_c_y', source=source_tcrd_view, color='red', alpha=0, size=10)
 image_tcrd = ImageURL(url="url_list", x="p_c_x", y="p_c_y", w="w", h="h", anchor="center")
-r_tcrd_2 = p_crd.add_glyph(source_tcrd, image_tcrd)
+r_tcrd_2 = p_crd.add_glyph(source_tcrd_view, image_tcrd)
 
 draw_tool = PointDrawTool(renderers=[r_wcrd_1, r_wcrd_2, r_tcrd_1, r_tcrd_2])
 p_crd.add_tools(draw_tool)
@@ -231,12 +258,72 @@ toggle1.js_link('active', r_wcrd_2, 'visible')
 toggle2 = Toggle(label="Thumbnail", button_type="success", active=True)
 toggle2.js_link('active', r_tcrd_2, 'visible')
 
-slider = Slider(start=0, end=1, value=1, step=.1, title="Alpha Value")
+slider_alpha_Value = Slider(start=0, end=1, value=1, step=.1, title="Alpha Value")
 #slider.on_change('value', slider_onchange)
-slider.js_link('value', image_tcrd, 'global_alpha')
+slider_alpha_Value.js_link('value', image_tcrd, 'global_alpha')
+
+silder_draw_index = Slider(start=0, end=1, value=1, step=1, title="Draw Index")
+
+callback = CustomJS(
+        args=dict(
+            source_wcrd=source_wcrd, source_wcrd_view=source_wcrd_view,
+            source_tcrd=source_tcrd, source_tcrd_view=source_tcrd_view),
+        code="""
+        var draw_index = cb_obj.value;
+
+        var d1 = source_wcrd.data;
+        var d2 = source_wcrd_view.data;
+        d2['p_c_x'] = []
+        d2['p_c_y'] = []
+        d2['url_list'] = []
+        d2['w'] = []
+        d2['h'] = []
+        d2['alpha'] = []
+        d2['draw_index'] = []
+        
+        for (var i = 0; i < d1['draw_index'].length; i++) {
+            if (draw_index == d1['draw_index'][i] ) {
+                d2['p_c_x'].push( d1['p_c_x'][i] )
+                d2['p_c_y'].push( d1['p_c_y'][i] )
+                d2['url_list'].push( d1['url_list'][i] )
+                d2['w'].push( d1['w'][i] )
+                d2['h'].push( d1['h'][i] )
+                d2['alpha'].push( d1['alpha'][i] )
+                d2['draw_index'].push( d1['draw_index'][i] )
+            }
+        }
+
+        source_wcrd_view.change.emit();
+
+        var d3 = source_tcrd.data;
+        var d4 = source_tcrd_view.data;
+        d4['p_c_x'] = []
+        d4['p_c_y'] = []
+        d4['url_list'] = []
+        d4['w'] = []
+        d4['h'] = []
+        d4['alpha'] = []
+        d4['draw_index'] = []
+
+        for (var i = 0; i < d3['draw_index'].length; i++) {
+            if (draw_index == d3['draw_index'][i] ) {
+                d4['p_c_x'].push( d3['p_c_x'][i] )
+                d4['p_c_y'].push( d3['p_c_y'][i] )
+                d4['url_list'].push( d3['url_list'][i] )
+                d4['w'].push( d3['w'][i] )
+                d4['h'].push( d3['h'][i] )
+                d4['alpha'].push( d3['alpha'][i] )
+                d4['draw_index'].push( d3['draw_index'][i] )
+            }
+        }
+        source_tcrd_view.change.emit();
+        
+    """)
+silder_draw_index.js_on_change('value', callback)
+
 
 toggles = Row(toggle1, toggle2)
-controles=Column(toggles, slider)
+controles=Column(slider_sx, toggles, slider_alpha_Value)
 
 
 columns = [
@@ -245,8 +332,8 @@ columns = [
           ]
 data_table = DataTable(source=source_sx_persistency, columns=columns, width=400, height=280)
 
-p_sx_layout  = Column(p_sx, slider_sx, controles)
-p_crd_layout = Column(p_crd, data_table)
+p_sx_layout  = Column(p_sx,  controles)
+p_crd_layout = Column(p_crd, silder_draw_index, data_table)
 
 #最後の部分
 plots = Row(p_sx_layout, p_crd_layout)
