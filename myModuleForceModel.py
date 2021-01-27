@@ -21,7 +21,7 @@ import random
 KR = 10000000
 KA = 500000
 
-HOW_MANY_MOVES = 2000
+HOW_MANY_MOVES = 100
 
 class Wrec:
     def __init__(self, word, p_c_x, p_c_y, p_tl_x, p_tl_y, p_tr_x, p_tr_y, p_bl_x, p_bl_y, p_br_x, p_br_y, size,  color, i):
@@ -181,23 +181,26 @@ class Wrecset:
                                 p1[1]      * p2[0]      -  p1[0]     *       p2[1]  \
                               ])
                 #print(B)
-                crossing_point = np.linalg.solve(A, B)
-                fa_direction = crossing_point - aft_p_c
+                try:
+                    crossing_point = np.linalg.solve(A, B)
+                    fa_direction = crossing_point - aft_p_c
 
-                if wrec.went_over == False and s * t < 0: # 正常だったのにひっくり返った時
-                    wrec.went_over= True 
-                    wrec.fa += KA * d * \
-                              ( fa_direction / np.linalg.norm(fa_direction))
+                    if wrec.went_over == False and s * t < 0: # 正常だったのにひっくり返った時
+                        wrec.went_over= True 
+                        wrec.fa += KA * d * \
+                                ( fa_direction / np.linalg.norm(fa_direction))
 
-                if wrec.went_over == True and s * t < 0: # ひっくり帰っていたのが正常に戻った時
-                    wrec.went_over == False
+                    if wrec.went_over == True and s * t < 0: # ひっくり帰っていたのが正常に戻った時
+                        wrec.went_over == False
 
-                if wrec.went_over == True and s * t >= 0: # ひっくり帰ったままの時
-                    wrec.fa += KA * d * \
-                              ( fa_direction / np.linalg.norm(fa_direction)) 
+                    if wrec.went_over == True and s * t >= 0: # ひっくり帰ったままの時
+                        wrec.fa += KA * d * \
+                                ( fa_direction / np.linalg.norm(fa_direction)) 
+                except:
+                    pass
         
     
-    def force_model(self):
+    def force_model(self, DRAW_INDEX):
         #　まず同じ値のものはちょっとずらず
         for wrec_1 in self.wrec_list:
             for wrec_2 in self.wrec_list:
@@ -219,7 +222,7 @@ class Wrecset:
         #print(word_positions_in_pic)
         tri = Delaunay(word_positions_in_pic)
         fig = delaunay_plot_2d(tri)
-        fig.savefig('./Images/scipy_matplotlib_delaunay_before.png')
+        # fig.savefig('./Images/scipy_matplotlib_delaunay_before.png')
         print(tri.simplices)
 
         for mesh in tri.simplices:
@@ -301,9 +304,10 @@ class Wrecset:
                                         } , ignore_index=True)
 
             i = i+1
-        tmp_df.to_csv('./CSVs/afrer_forced_output.csv', index=False)
+        SAVE_PATH = './Bokeh/CSVs/afrer_forced_output_' + str(DRAW_INDEX) + '.csv'
+        tmp_df.to_csv(SAVE_PATH, index=False)
 
-    def draw_word_crowd(self):
+    def draw_word_crowd(self, DRAW_INDEX):
         #ワードクラウド描画
         X_SIZE = int(self.x_max - self.x_min + 400)
         Y_SIZE = int(self.y_max - self.y_min + 400)

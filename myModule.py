@@ -487,19 +487,21 @@ class Tset:
                                         'color'   : self.elements_list[DRAW_INDEX].extracted_w_info_dict[word].color\
                                         } , ignore_index=True)
         print(tmp_df)
-        tmp_df.to_csv('./CSVs/positions_corners_size_csv_out.csv', index=False)
+        SAVE_PATH = './CSVs/positions_corners_size_csv_out' + '_' + str(DRAW_INDEX) + '.csv'
+        tmp_df.to_csv(SAVE_PATH, index=False)
 
-        campus.save('./Images/pillow_imagedraw.jpg', quality=95)
+        #campus.save('./Images/pillow_imagedraw.jpg', quality=95) ←　もう画像を残す必要が無くなったからここはコメントアウト
         #print(self.elements_list[DRAW_INDEX].word_count_dict)
         #print(word_positions_in_pic)
         #ドロネー三角分割
         tri = Delaunay(word_positions_in_pic)
         fig = delaunay_plot_2d(tri)
-        fig.savefig('./Images/scipy_matplotlib_delaunay.png')
+        #fig.savefig('./Images/scipy_matplotlib_delaunay.png')　←　力学モデルを使う前のドロネー三角化 → 表示する必要がないので削除
 
     def draw_thumbnail_crowd_with_word(self, DRAW_INDEX, X_SIZE, Y_SIZE):
         #　csvファイルオープンする
-        df = pd.read_csv("./CSVs/positions_corners_size_csv_out.csv")
+        OPEN_PATH = './CSVs/positions_corners_size_csv_out' + '_' + str(DRAW_INDEX) + '.csv'
+        df = pd.read_csv(OPEN_PATH)
         position_scale_rate = X_SIZE / (self.x_max + 0.5)
 
         for item in self.elements_list[DRAW_INDEX].extracted_watch_info_dict.items():
@@ -530,8 +532,10 @@ class Tset:
                             'color'   : "Thumbnail"\
                             } , ignore_index=True)
             print("hoge")
+        
         print(df)
-        df.to_csv('./CSVs/withThumb_positions_corners_size_csv_out.csv', index=False)
+        SAVE_PATH = './CSVs/withThumb_positions_corners_size_csv_out' + '_' + str(DRAW_INDEX) + '.csv'
+        df.to_csv(SAVE_PATH, index=False)
 
         ''''
         campus = Image.open('./Images/pillow_imagedraw.jpg')
@@ -552,7 +556,7 @@ class Tset:
                         )
             campus.save('./Images/pillow_imagedraw.jpg', quality=95)
             '''
-    def draw_significance_curve(self, TSET_INTERVAL_NUM, DRAW_INDEX):
+    def draw_significance_curve(self, TSET_INTERVAL_NUM):
         # significance curve 書く
         left   = np.array( range(TSET_INTERVAL_NUM-1) )
         height = np.empty(0)
