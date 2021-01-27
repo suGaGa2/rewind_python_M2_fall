@@ -18,6 +18,8 @@ TSET_INTERVAL_NUM = 45
 INDEX = 14
 DATA_PATH = THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
 
+FIRST_DRAW_INDEX  = 0 #初期に描画する時間窓のINDEX
+
 
 df_sx   = pd.read_csv("Bokeh/CSVs/S_X_output.csv")
 sx_value_list = df_sx["sx_value"].values.tolist()
@@ -44,6 +46,13 @@ source_sx_persistency = ColumnDataSource(
     data = {'index': [], 'sx_value': [],\
             'start_datetime_str' : [], 'end_datetime_str':[],\
             'start_datetime_dt'  : [],  'end_datetime_dt' :[]}
+)
+
+source_sx_draw_highlight = ColumnDataSource(
+    data = {'index': [index_list[FIRST_DRAW_INDEX]], 'sx_value': [sx_value_list[FIRST_DRAW_INDEX]],\
+            'start_datetime_str' : [start_datetime_list_str[FIRST_DRAW_INDEX]], 'end_datetime_str':[end_datetime_list_str[FIRST_DRAW_INDEX]],\
+            'start_datetime_dt'  : [start_datetime_list_dt[FIRST_DRAW_INDEX]],  'end_datetime_dt' :[end_datetime_list_dt[FIRST_DRAW_INDEX]]
+           }
 )
 
 TOOLTIPS = [
@@ -99,6 +108,15 @@ p_sx.circle(x='start_datetime_dt', y='sx_value',
              line_color='crimson', line_width=1)
 
 
+p_sx.circle(x='start_datetime_dt', y='sx_value',
+             source=source_sx_draw_highlight, size=20,
+             fill_color='coral', fill_alpha=0.5,
+             line_color='crimson', line_width=1)
+
+
+
+
+
 
 #----------------------------------------------------------------------------------------#
 # Thumbnail Crowdの表示
@@ -137,6 +155,10 @@ h_list_wcrd = (np.array(p_bl_y_list_wcrd) - np.array(p_tl_y_list_wcrd)).tolist()
 
 draw_index_list_wcrd = df_wcrd["draw_index"].values.tolist()
 
+extract_start_index_wcrd      = draw_index_list_wcrd.index(FIRST_DRAW_INDEX)  # FIRST_DRAW_INDEXがはじまる位置．はじめに描画する p_crd の時間窓のINDEXを得るため
+extract_element_num_wcrd      = draw_index_list_wcrd.count(FIRST_DRAW_INDEX)  # FIRST_DRAW_INDEXの個数．はじめに描画する p_crd の時間窓のINDEXを得るため
+extract_end_index_wcrd        = extract_start_index_wcrd + extract_element_num_wcrd - 1 # FIRST_DRAW_INDEXがおわる位置．
+
 alpha_list_wcrd = np.ones(len(df_wcrd))
 # **************************************************************************************
 df_tcrd  = df_crd[df_crd["color"] == "Thumbnail"]
@@ -155,8 +177,12 @@ p_tl_y_list_tcrd = df_tcrd["p_tl_y"].values.tolist()
 h_list_tcrd = (np.array(p_bl_y_list_tcrd) - np.array(p_tl_y_list_tcrd)).tolist()
 
 draw_index_list_tcrd = df_wcrd["draw_index"].values.tolist()
+extract_start_index_tcrd      = draw_index_list_tcrd.index(FIRST_DRAW_INDEX)  # FIRST_DRAW_INDEXがはじまる位置．はじめに描画する p_crd の時間窓のINDEXを得るため
+extract_element_num_tcrd      = draw_index_list_tcrd.count(FIRST_DRAW_INDEX)  # FIRST_DRAW_INDEXの個数．はじめに描画する p_crd の時間窓のINDEXを得るため
+extract_end_index_tcrd       = extract_start_index_tcrd + extract_element_num_tcrd - 1 # FIRST_DRAW_INDEXがおわる位置．
 
 alpha_list_tcrd = np.ones(len(df_tcrd))
+
 
 
 ###***************************************************************************
@@ -178,6 +204,7 @@ for index, row in df_crd.iterrows():
 
 
 # *************************************************
+
 # 【ワード用】全 Draw Index の情報が詰まった ColumnDataSource
 source_wcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_wcrd, 'p_c_y': p_c_y_list_wcrd,\
@@ -186,12 +213,19 @@ source_wcrd = ColumnDataSource(
 
 # 【ワード用】描画するようの ColumnDataSource
 source_wcrd_view = ColumnDataSource(
-    data = {'p_c_x'   : p_c_x_list_wcrd, 'p_c_y': p_c_y_list_wcrd,\
-            'url_list': url_list_wcrd,   'w'    : w_list_wcrd,   'h' : h_list_wcrd, 'alpha' : alpha_list_wcrd, 'draw_index' : draw_index_list_wcrd}
+    data = {'p_c_x'   : p_c_x_list_wcrd[extract_start_index_wcrd:(extract_end_index_wcrd+1)],
+            'p_c_y': p_c_y_list_wcrd[extract_start_index_wcrd   :(extract_end_index_wcrd+1)],
+            'url_list': url_list_wcrd[extract_start_index_wcrd   :(extract_end_index_wcrd+1)],
+            'w'    : w_list_wcrd[extract_start_index_wcrd       :(extract_end_index_wcrd+1)],
+            'h' : h_list_wcrd[extract_start_index_wcrd          :(extract_end_index_wcrd+1)],
+            'alpha' : alpha_list_wcrd[extract_start_index_wcrd  :(extract_end_index_wcrd+1)],
+            'draw_index' : draw_index_list_wcrd[extract_start_index_wcrd  :(extract_end_index_wcrd+1)]
+            }
 )
 
 
 # ***************************************************
+
 # 【サムネイル用】全 Draw Index の情報が詰まった ColumnDataSource
 source_tcrd = ColumnDataSource(
     data = {'p_c_x'   : p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
@@ -200,8 +234,14 @@ source_tcrd = ColumnDataSource(
 
 # 【サムネイル用】描画するようの ColumnDataSource
 source_tcrd_view = ColumnDataSource(
-    data = {'p_c_x'   : p_c_x_list_tcrd, 'p_c_y': p_c_y_list_tcrd,\
-            'url_list': url_list_tcrd,   'w'    : w_list_tcrd,   'h' : h_list_tcrd, 'alpha' : alpha_list_tcrd, 'draw_index' : draw_index_list_tcrd}
+    data = {'p_c_x'   : p_c_x_list_tcrd[extract_start_index_tcrd:(extract_end_index_tcrd+1)],
+            'p_c_y': p_c_y_list_tcrd[extract_start_index_tcrd   :(extract_end_index_tcrd+1)],
+            'url_list': url_list_tcrd[extract_start_index_tcrd   :(extract_end_index_tcrd+1)],
+            'w'    : w_list_tcrd[extract_start_index_tcrd       :(extract_end_index_tcrd+1)],
+            'h' : h_list_tcrd[extract_start_index_tcrd          :(extract_end_index_tcrd+1)],
+            'alpha' : alpha_list_tcrd[extract_start_index_tcrd  :(extract_end_index_tcrd+1)],
+            'draw_index' : draw_index_list_tcrd[extract_start_index_tcrd  :(extract_end_index_tcrd+1)]
+            }
 )
 
 
@@ -224,7 +264,7 @@ p_crd.add_tools(draw_tool)
 p_crd.toolbar.active_tap = draw_tool
 
 
-slider_sx = Slider(start=0, end=5, value=5, step=.1, title="Persistency")
+slider_sx = Slider(start=0, end=5, value=5, step=.1, title="Persistency", sizing_mode='stretch_width')
 slider_sx.js_on_change('value',
                       CustomJS(args=dict(box=box, source_sx=source_sx, source_sx_persistency=source_sx_persistency),
     code="""
@@ -242,7 +282,6 @@ slider_sx.js_on_change('value',
                 d2['start_datetime_dt'].push( d1['start_datetime_dt'][i]);
                 d2['end_datetime_dt'].push(   d1['end_datetime_dt'][i]);
             }
-
     }
     source_sx_persistency.data = d2;
     console.log(d2);
@@ -262,17 +301,48 @@ slider_alpha_Value = Slider(start=0, end=1, value=1, step=.1, title="Alpha Value
 #slider.on_change('value', slider_onchange)
 slider_alpha_Value.js_link('value', image_tcrd, 'global_alpha')
 
-silder_draw_index = Slider(start=0, end=1, value=1, step=1, title="Draw Index")
-
+silder_draw_index = Slider(start=0, end=1, value=FIRST_DRAW_INDEX, step=-1, title="Draw Index", direction="rtl", sizing_mode='stretch_width')
 callback = CustomJS(
         args=dict(
             source_wcrd=source_wcrd, source_wcrd_view=source_wcrd_view,
-            source_tcrd=source_tcrd, source_tcrd_view=source_tcrd_view),
+            source_tcrd=source_tcrd, source_tcrd_view=source_tcrd_view,
+            source_sx=source_sx,
+            source_sx_draw_highlight=source_sx_draw_highlight),
         code="""
-        var draw_index = cb_obj.value;
-
         var d1 = source_wcrd.data;
         var d2 = source_wcrd_view.data;
+        var d3 = source_tcrd.data;
+        var d4 = source_tcrd_view.data;
+
+        for (var i = 0; i < d2['url_list'].length; i++) {
+            for (var j = 0; j < d1['url_list'].length; j++) {
+                if ( d2['url_list'][i]== d1['url_list'][j] ) {
+                    d1['p_c_x'][j] = d2['p_c_x'][i]
+                    d1['p_c_y'][j] = d2['p_c_y'][i]
+                    d1['url_list'][j] = d2['url_list'][i]
+                    d1['w'][j] = d2['w'][i]
+                    d1['h'][j] = d2['h'][i]
+                    d1['alpha'][j] = d2['alpha'][i]
+                    d1['draw_index'][j] = d2['draw_index'][i]
+                }
+            }
+        }
+        for (var i = 0; i < d4['url_list'].length; i++) {
+            for (var j = 0; j < d3['url_list'].length; j++) {
+                if ( d4['url_list'][i]== d3['url_list'][j] ) {
+                    d3['p_c_x'][j] = d4['p_c_x'][i]
+                    d3['p_c_y'][j] = d4['p_c_y'][i]
+                    d3['url_list'][j] = d4['url_list'][i]
+                    d3['w'][j] = d4['w'][i]
+                    d3['h'][j] = d4['h'][i]
+                    d3['alpha'][j] = d4['alpha'][i]
+                    d3['draw_index'][j] = d4['draw_index'][i]
+                }
+            }
+        }
+
+
+        var draw_index = cb_obj.value;
         d2['p_c_x'] = []
         d2['p_c_y'] = []
         d2['url_list'] = []
@@ -317,13 +387,25 @@ callback = CustomJS(
             }
         }
         source_tcrd_view.change.emit();
+
+        var d6 = source_sx.data;
+        const d5 = {'index': [], 'sx_value': [],
+                    'start_datetime_str': [], 'end_datetime_str' : [], 
+                    'start_datetime_dt':  [], 'end_datetime_dt'  : []};
+
+        d5['index'].push(             d6['index'][draw_index]);
+        d5['sx_value'].push(          d6['sx_value'][draw_index]);
+        d5['start_datetime_str'].push(d6['start_datetime_str'][draw_index]);
+        d5['end_datetime_str'].push(  d6['end_datetime_str'][draw_index]);
+        d5['start_datetime_dt'].push( d6['start_datetime_dt'][draw_index]);
+        d5['end_datetime_dt'].push(   d6['end_datetime_dt'][draw_index]);
+
+        source_sx_draw_highlight.data = d5;
+        source_sx_draw_highlight.change.emit();
         
     """)
 silder_draw_index.js_on_change('value', callback)
 
-
-toggles = Row(toggle1, toggle2)
-controles=Column(slider_sx, toggles, slider_alpha_Value)
 
 
 columns = [
@@ -332,15 +414,15 @@ columns = [
           ]
 data_table = DataTable(source=source_sx_persistency, columns=columns, width=400, height=280)
 
-p_sx_layout  = Column(p_sx,  controles)
-p_crd_layout = Column(p_crd, silder_draw_index, data_table)
+controles=Column(silder_draw_index, slider_sx, sizing_mode='stretch_width')
+p_sx_layout  = Column(p_sx,  controles, margin=( 8 , 8 , 8 , 8 ))
+
+toggles = Row(toggle1, toggle2)
+p_crd_layout = Column(p_crd, toggles, slider_alpha_Value, data_table, margin=( 8 , 8 , 8 , 8 ))
 
 #最後の部分
 plots = Row(p_sx_layout, p_crd_layout)
 #output_file("MOGE.html")
 show(plots)
 curdoc().add_root(plots)
-
-
-
 
