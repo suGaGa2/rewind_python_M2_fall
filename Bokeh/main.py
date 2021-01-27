@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from PillowRoundedRecCreation import word_image_creation
 
 INDEX = 14
-THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/withThumb_positions_corners_size_csv_out"
+DATA_PATH = THUMBNAIL_CROWD_PATH = "Bokeh/CSVs/afrer_forced_output_" + str(INDEX) + '.csv'
 
 
 df_sx   = pd.read_csv("Bokeh/CSVs/S_X_output.csv")
@@ -101,12 +101,9 @@ p_sx.circle(x='start_datetime_dt', y='sx_value',
 
 
 
-
-
 #----------------------------------------------------------------------------------------#
 # Thumbnail Crowdの表示
-#df_crd = pd.read_csv("Bokeh/CSVs/afrer_forced_output"+ "_"+ str(INDEX)+".csv")
-df_crd = pd.read_csv(THUMBNAIL_CROWD_PATH+ "_"+ str(INDEX)+".csv")
+df_crd = pd.read_csv(DATA_PATH)
 #===========================================================================
 df_wcrd = df_crd[df_crd["color"] != "Thumbnail"]
 p_c_x_list_wcrd = df_wcrd["p_c_x"].values.tolist()
